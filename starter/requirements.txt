@@ -1,6 +1,8 @@
 # Same runtime pins as ../requirements.txt (Streamlit Cloud checks the app folder first)
 pandas>=2.2,<4
 streamlit>=1.40,<2
+pillow>=10
+numpy>=1.26
 # dev / tests
 pytest>=8
 # optional LLM: openai>=1.0

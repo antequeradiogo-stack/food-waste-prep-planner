@@ -19,3 +19,11 @@
 - [ ] Grant challenge: no applicant personal data; nonprofit eligibility judged by a human.
 ## Claims
 - [ ] No invented user validation or impact figures. Say "we expect / would measure", not "reduces waste by X%".
+
+## Plate-waste photos (Log plate waste tab)
+- [ ] Camera only at the plate-return / dish station, pointed at plates; no guests or staff faces in frame.
+- [ ] GDPR: don't store photos unless needed; if stored, inform people, short retention, no photos in LLM prompts unless provider terms allow.
+- [ ] Estimates are unvalidated: offline method labelled "rough heuristic, demo only"; LLM output strictly validated (bucket + confidence), falls back to heuristic on error.
+- [ ] Staff confirm or correct every bucket before it is logged; the log records both estimated and confirmed bucket.
+- [ ] Pilot plan: weigh a sample of plates on a scale to calibrate before trusting any gram numbers.
+- [ ] Sample images are synthetic illustrations, labelled as such.

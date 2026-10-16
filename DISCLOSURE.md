@@ -3,6 +3,7 @@ Team: ___ · Number: ___ · Challenge: ___
 
 ## Prepared BEFORE the event (by Diogo, with AI assistance)
 - Generic Streamlit starter template (`starter/`): CSV loader, same-weekday moving-average baseline, placeholder rule-based suggestion, human-approval button, assumptions box. ~150 lines; not specific to our final idea.
+- Plate-waste logging tab (heuristic + optional vision LLM, human confirm), synthetic recipes and drawn sample plates.
 - Synthetic restaurant dataset generator + CSV (`data/`), clearly labelled SYNTHETIC.
 - Pitch/slide outline, responsible-AI checklist, this template.
 - AI help used in preparation: AI assistant (Grok Bot) drafted the template code and docs.
