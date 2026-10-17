@@ -18,7 +18,7 @@ HOW_IT_WORKS = [
     (":material/trending_up:", "1. Forecast", "Past sales for the same weekday predict tomorrow's portions."),
     (":material/checklist:", "2. Approve prep", "The app suggests prep amounts with a reason; the manager edits and approves."),
     (":material/inventory_2:", "3. Check stock", "Shelf cameras count packs, scales weigh the rest; staff confirm. Use what expires first."),
-    (":material/local_shipping:", "4. Order what's missing", "Recipe grams × forecast − confirmed stock, rounded to supplier packs. Export only."),
+    (":material/local_shipping:", "4. Order what's missing", "Daily top-ups or a weekly order: forecast × recipe grams − stock that won't expire first, rounded to packs, split into deliveries. Approve first."),
     (":material/photo_camera:", "5. Log waste", "Plate and bin entries (confirmed by staff) show what's thrown away, to tune the next forecast."),
 ]
 
@@ -76,7 +76,8 @@ def plan_date():
 
 
 def app_data() -> assistant.AppData:
-    return assistant.AppData(sales(), recipes(), stock(), suppliers(), plan_date(), st.session_state.waste_log, batches())
+    return assistant.AppData(sales(), recipes(), stock(), suppliers(), plan_date(), st.session_state.waste_log, batches(),
+                             list(st.session_state.get("weekly_events", [])))
 
 
 # ---------- session + layout ----------

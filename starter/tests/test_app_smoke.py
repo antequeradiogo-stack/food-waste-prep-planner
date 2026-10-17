@@ -6,7 +6,7 @@ from streamlit.testing.v1 import AppTest
 
 STARTER = pathlib.Path(__file__).resolve().parents[1]
 APP = str(STARTER / "app.py")
-PAGES = ["views/home.py", "views/prep.py", "views/stock.py", "views/order.py", "views/cameras.py", "views/chat.py", "views/about.py"]
+PAGES = ["views/home.py", "views/prep.py", "views/stock.py", "views/order.py", "views/weekly.py", "views/cameras.py", "views/chat.py", "views/about.py"]
 
 
 @pytest.fixture(autouse=True)

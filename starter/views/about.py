@@ -21,7 +21,8 @@ st.markdown("""
 | `synthetic_restaurant_daily.csv` | daily prepared / sold / wasted portions | **Synthetic**, seeded generator |
 | `recipes.csv` | grams per ingredient per portion | **Synthetic** |
 | `stock_batches.csv`, `stock.csv` | batches by location with received/expiry dates; totals | **Synthetic** |
-| `suppliers.csv` | pack sizes, prices | **Synthetic**, fictional suppliers |
+| `suppliers.csv` | pack sizes, prices, lead times, storage, delivery days | **Synthetic**, fictional suppliers |
+| `data/orders/` | approved weekly orders (JSON + CSV), created by the app | Your approvals; ephemeral on Streamlit Cloud |
 | `shelf_samples/*.png` | shelf images | **Drawn illustrations**, not photos |
 | `sample_plates/*.png` | plate images | **Drawn illustrations**, not photos |
 
@@ -30,15 +31,15 @@ No real restaurant, guest or supplier data is included.
 
 st.subheader("Human oversight")
 st.markdown("""
-- Prep plans and supplier orders are **suggestions**; a manager must approve. Orders are only exported as CSV.
+- Prep plans, supplier orders and weekly orders are **suggestions**; a manager must approve. Approved weekly orders are saved in the app and exported as CSV — no supplier is ever contacted.
 - Plate estimates must be **confirmed or corrected** by staff before they are logged; both values are kept.
-- The assistant **advises only** and cannot approve or order.
+- The assistant **advises only**: it can prepare a draft weekly order or add an event to the draft, but only a person can approve.
 - Shelf counts and scale readings change stock **only after staff confirm**; odd readings (negative, over max, sudden jumps) are flagged and start unticked.
 """)
 
 st.subheader("Limits")
 st.markdown("""
-- Forecast = same-weekday average; ignores weather, holidays, events and menu changes. Sold-out days undercount demand.
+- Forecast = same-weekday average; ignores weather, holidays and menu changes; events only count if a manager adds them (Weekly order). Sold-out days undercount demand.
 - Plate-waste estimates are **unvalidated** (rough heuristic / untested LLM); a pilot must calibrate them against weighed plates.
 - Optional LLM answers are checked: numbers not found in the app's data are flagged.
 - Shelf cameras count packs only — not how full a sack is, and they can't read expiry dates. The shelf heuristic only works on the bundled drawings.

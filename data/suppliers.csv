@@ -1,21 +1,21 @@
-ingredient,supplier,pack_size_g,pack_price_nok,lead_time_days
-white_fish,Fish supplier (fictional),2000,420,1
-potato,Produce supplier (fictional),10000,180,1
-cream,Dairy supplier (fictional),1000,55,1
-leek,Produce supplier (fictional),1000,45,1
-beef_patty,Butcher (fictional),3000,390,2
-bun,Bakery (fictional),1600,60,1
-cheese,Dairy supplier (fictional),1000,120,1
-lettuce_tomato,Produce supplier (fictional),2000,70,1
-chickpeas,Dry goods (fictional),2500,60,3
-rice,Dry goods (fictional),5000,95,3
-vegetables,Produce supplier (fictional),5000,150,1
-coconut_sauce,Dry goods (fictional),2000,80,3
-romaine,Produce supplier (fictional),1500,65,1
-chicken,Butcher (fictional),2500,260,2
-croutons,Bakery (fictional),1000,50,2
-dressing,Dry goods (fictional),1000,70,3
-bread,Bakery (fictional),2000,70,1
-butter,Dairy supplier (fictional),500,45,1
-cake,Bakery (fictional),2200,240,2
-mixed_fruit,Produce supplier (fictional),3000,150,1
+ingredient,supplier,pack_size_g,pack_price_nok,lead_time_days,storage,delivery_days
+white_fish,Fish supplier (fictional),2000,420,1,fresh,Mon;Thu
+potato,Produce supplier (fictional),10000,180,1,dry,Mon
+cream,Dairy supplier (fictional),1000,55,1,fresh,Mon;Thu
+leek,Produce supplier (fictional),1000,45,1,fresh,Mon;Thu
+beef_patty,Butcher (fictional),3000,390,2,frozen,Mon
+bun,Bakery (fictional),1600,60,1,fresh,Mon;Thu
+cheese,Dairy supplier (fictional),1000,120,1,fresh,Mon;Thu
+lettuce_tomato,Produce supplier (fictional),2000,70,1,fresh,Mon;Thu
+chickpeas,Dry goods (fictional),2500,60,3,dry,Mon
+rice,Dry goods (fictional),5000,95,3,dry,Mon
+vegetables,Produce supplier (fictional),5000,150,1,fresh,Mon;Thu
+coconut_sauce,Dry goods (fictional),2000,80,3,dry,Mon
+romaine,Produce supplier (fictional),1500,65,1,fresh,Mon;Thu
+chicken,Butcher (fictional),2500,260,2,fresh,Mon;Thu
+croutons,Bakery (fictional),1000,50,2,dry,Mon
+dressing,Dry goods (fictional),1000,70,3,dry,Mon
+bread,Bakery (fictional),2000,70,1,fresh,Mon;Thu
+butter,Dairy supplier (fictional),500,45,1,fresh,Mon;Thu
+cake,Bakery (fictional),2200,240,2,frozen,Mon
+mixed_fruit,Produce supplier (fictional),3000,150,1,fresh,Mon;Thu

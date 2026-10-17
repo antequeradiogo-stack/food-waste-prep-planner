@@ -7,3 +7,4 @@ __pycache__/
 .env.*
 .streamlit/secrets.toml
 approved_plan.csv
+data/orders/

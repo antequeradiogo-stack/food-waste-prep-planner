@@ -5,7 +5,8 @@
 - `stock_batches.csv`: SYNTHETIC batches (location, quantity, unit pack/g, received + expiry dates; demo "today" = 2026-07-06), from `make_stock_data.py` (seed 7; shelf lives invented).
 - `stock.csv`: SYNTHETIC grams on hand per ingredient = sum of the batches (kept in sync; CSV fallback).
 - `shelf_samples/*.png` + `manifest.json`: drawn shelf illustrations (not photos) and the pack counts drawn; one item per shelf is drawn one pack short of the records so the demo shows a correction.
-- `suppliers.csv`: FICTIONAL suppliers, pack sizes, prices (NOK) and lead times — invented.
+- `suppliers.csv`: FICTIONAL suppliers, pack sizes, prices (NOK), lead times, `storage` (fresh/dry/frozen) and `delivery_days` (fresh `Mon;Thu`, long-life `Mon`) — all invented; written by `make_suppliers.py`.
+- `orders/` (git-ignored, created at runtime): weekly orders a person approved in the app; tagged `data_source=SYNTHETIC` while the demo data is used.
 - `recipes.csv`: SYNTHETIC dish → ingredient → grams per portion (invented, for the demo).
 - `sample_plates/*.png`: drawn illustrations (not photos) from `make_sample_plates.py`, labelled on the image.
 - No personal data. Regenerate: `python generate_synthetic_restaurant_data.py --seed 42`.

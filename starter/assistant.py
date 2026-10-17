@@ -19,6 +19,7 @@ import pandas as pd
 import core
 import ordering
 import stock as stock_mod
+import weekly
 
 SUGGESTED_QUESTIONS = [
     "What should I prep tomorrow?",
@@ -32,6 +33,13 @@ SUGGESTED_QUESTIONS = [
     "What's in stock in the walk-in fridge?",
 ]
 
+# Manager-style questions (weekly order, events, risks) — shown first on the Assistant page
+MANAGER_QUESTIONS = [
+    "Plan next week's order",
+    "Big event Friday, +40 covers",
+    "What are the risks this week?",
+]
+
 
 @dataclass
 class AppData:
@@ -42,6 +50,7 @@ class AppData:
     plan_date: object                       # the "tomorrow" we plan for
     waste_log: list = field(default_factory=list)
     batches: pd.DataFrame | None = None     # stock batches (location, expiry); optional
+    events: list = field(default_factory=list)  # weekly-order events set on the Weekly order page
 
 
 # ------------------------------------------------------------------ tools
@@ -142,7 +151,69 @@ def tool_use_first_advice(data: AppData, days: int = 2) -> dict:
                         "days_left": int(r.days_left), "use_in_dishes": r.use_in_dishes} for r in e.itertuples()]}
 
 
+def _event_list(data: AppData, event_day, extra_covers, extra_pct) -> list:
+    events = list(data.events or [])
+    if event_day and (extra_covers or extra_pct):
+        ws = weekly.next_week_start(data.sales)
+        idx = [d.lower() for d in weekly.DAYS].index(str(event_day)[:3].lower())
+        events.append({"date": weekly.week_dates(ws)[idx], "extra_covers": int(extra_covers or 0),
+                       "extra_pct": float(extra_pct or 0)})
+    return events
+
+
+def _week(data: AppData, buffer_pct, max_cut_pct, events):
+    return weekly.build_week_order(data.sales, data.recipes, data.suppliers, batches=data.batches, stock=data.stock,
+                                   events=events, buffer_pct=buffer_pct, max_cut_pct=max_cut_pct)
+
+
+def tool_weekly_order(data: AppData, buffer_pct: float = weekly.DEFAULT_BUFFER_PCT,
+                      max_cut_pct: float = weekly.DEFAULT_MAX_CUT_PCT, event_day: str | None = None,
+                      extra_covers: int = 0, extra_pct: float = 0) -> dict:
+    """Draft order for next Monday-Sunday, split by delivery. A DRAFT: the manager approves in the app."""
+    events = _event_list(data, event_day, extra_covers, extra_pct)
+    r = _week(data, buffer_pct, max_cut_pct, events)
+    lines, plan = r["lines"], r["plan"]
+    dish = plan.groupby("item").agg(forecast=("forecast", "sum"), with_events=("forecast_adj", "sum"),
+                                    planned=("planned", "sum"), waste_rate_pct=("waste_rate_pct", "first"),
+                                    waste_cut_pct=("waste_cut_pct", "first")).round(1)
+    deliveries = []
+    for d, g in lines.groupby("delivery_date"):
+        deliveries.append({"date": str(d), "day": weekly.DAYS[pd.Timestamp(d).weekday()],
+                           "packs": int(g["packs"].sum()), "est_cost_nok": int(g["est_cost_nok"].sum()),
+                           "lines": [{"ingredient": x.ingredient, "packs": int(x.packs), "supplier": x.supplier}
+                                     for x in g.itertuples()]})
+    top = r["summary"].sort_values("packs", ascending=False).head(3)
+    return {"week_start": str(r["week_start"]), "week_end": str(r["dates"][-1]), "buffer_pct": buffer_pct,
+            "max_cut_pct": max_cut_pct, "status": "DRAFT - not ordered until approved on the Weekly order page",
+            "events": [{"date": str(e["date"]), "day": weekly.DAYS[pd.Timestamp(e["date"]).weekday()],
+                        "extra_covers": int(e.get("extra_covers", 0)), "extra_pct": float(e.get("extra_pct", 0))}
+                       for e in events],
+            "forecast_portions": round(float(dish["forecast"].sum()), 1),
+            "forecast_portions_with_events": round(float(dish["with_events"].sum()), 1),
+            "planned_portions": round(float(dish["planned"].sum()), 1),
+            "total_packs": int(lines["packs"].sum()), "total_est_cost_nok": int(lines["est_cost_nok"].sum()),
+            "deliveries": deliveries,
+            "dishes": [{"dish": i, **{k: float(v) for k, v in row.items()}} for i, row in dish.iterrows()],
+            "top_reasons": top["reason"].tolist()}
+
+
+def tool_week_risks(data: AppData, event_day: str | None = None, extra_covers: int = 0, extra_pct: float = 0) -> dict:
+    """Risks for next week: stockouts before the first delivery, stock expiring unused, recent sell-outs, rising waste."""
+    r = _week(data, weekly.DEFAULT_BUFFER_PCT, weekly.DEFAULT_MAX_CUT_PCT,
+              _event_list(data, event_day, extra_covers, extra_pct))
+    return weekly.risks(r, data.sales)
+
+
 TOOLS = {
+    "get_weekly_order": (tool_weekly_order,
+                         "DRAFT stock order for next Monday-Sunday, by delivery, with reasons. Optional event: "
+                         "event_day (Mon..Sun) with extra_covers and/or extra_pct. The manager approves in the app.",
+                         {"buffer_pct": {"type": "number"}, "max_cut_pct": {"type": "number"},
+                          "event_day": {"type": "string", "enum": weekly.DAYS}, "extra_covers": {"type": "integer"},
+                          "extra_pct": {"type": "number"}}),
+    "get_week_risks": (tool_week_risks, "Next week's risks: stockouts before delivery, expiring stock, sell-outs, rising waste.",
+                       {"event_day": {"type": "string", "enum": weekly.DAYS}, "extra_covers": {"type": "integer"},
+                        "extra_pct": {"type": "number"}}),
     "get_prep_plan": (tool_prep_plan, "Suggested prep portions per dish for the plan date.",
                       {"buffer_pct": {"type": "number"}, "weeks": {"type": "integer"}}),
     "get_order_suggestions": (tool_order_suggestions, "Suggested supplier order (packs) for the next N days.",
@@ -261,6 +332,53 @@ def _fmt_use_first(r):
             f"Consider a daily special; the chef decides.")
 
 
+def _fmt_risks(k: dict) -> str:
+    out = []
+    for x in k["stockout_before_delivery"]:
+        out.append(f"- **Stockout:** {x['ingredient']} runs short from {x['short_from']} ({x['short_g']} g) before the "
+                   f"first delivery ({x['first_delivery'] or 'none'}) — move it to an earlier drop or swap the dish.")
+    for x in k["expiring_unused"]:
+        out.append(f"- **Expiring:** {x['ingredient']} — {x['grams']} g expire {x['day']} before use. Push it in a special.")
+    for x in k["recent_sellouts"][:3]:
+        out.append(f"- **Sold out recently:** {x['dish']} on {x['days']} of the last 14 days "
+                   f"({x['portions_short']} portions short) — the forecast may be low.")
+    for x in k["rising_waste"]:
+        out.append(f"- **Waste rising:** {x['dish']} {x['waste_rate_pct_prior_14d']}% → {x['waste_rate_pct_last_14d']}% "
+                   f"of prepared (last 14 days vs the 14 before) — check portion size and prep batches.")
+    return "\n".join(out) or "- No stockout, expiry or waste-trend risks found."
+
+
+def _fmt_week(w: dict, k: dict) -> str:
+    ev = "".join(f" incl. {e['day']} event (" + ", ".join(
+        ([f"+{e['extra_covers']} covers"] if e["extra_covers"] else []) + ([f"+{e['extra_pct']:g}%"] if e["extra_pct"] else []))
+        + ")" for e in w["events"])
+    drops = "\n".join(f"- **{d['day']} {d['date']}** — {d['packs']} packs, ≈ {d['est_cost_nok']:,} NOK: "
+                      + ", ".join(f"{x['ingredient']} {x['packs']}" for x in d["lines"]) for d in w["deliveries"])
+    reasons = "\n".join(f"- {r}" for r in w["top_reasons"])
+    return (f"**Summary.** Week {w['week_start']} → {w['week_end']}: forecast {w['forecast_portions_with_events']} portions{ev}; "
+            f"I've drafted **{w['total_packs']} packs** over {len(w['deliveries'])} deliveries, ≈ **{w['total_est_cost_nok']:,} NOK** "
+            f"(synthetic prices). Buffer {w['buffer_pct']:g}%, trimmed up to {w['max_cut_pct']:g}% for dishes we keep wasting.\n\n"
+            f"**Draft order** (fresh twice a week, dry goods weekly):\n{drops}\n\nBiggest lines and why:\n{reasons}\n\n"
+            f"**Risks this week:**\n{_fmt_risks(k)}\n\n"
+            f"**Next step — approve or edit:** open **Weekly order**, adjust packs or events, then click *Approve weekly order*. "
+            f"This is a draft only; nothing is ordered and no supplier is contacted.\n\n"
+            f"**Why:** same-weekday average of the last 4 weeks of sales, waste-trimmed buffer, recipe grams, "
+            f"stock batches by expiry and supplier pack sizes / delivery days (all synthetic).")
+
+
+_DAY_WORDS = {"mon": "Mon", "tue": "Tue", "wed": "Wed", "thu": "Thu", "fri": "Fri", "sat": "Sat", "sun": "Sun"}
+
+
+def _event_in(q: str) -> dict:
+    day = next((v for k, v in _DAY_WORDS.items() if re.search(rf"\b{k}", q)), None)
+    cov = re.search(r"(\d+)\s*(?:extra\s+)?(?:covers?|guests?|people|pax|diners)", q)
+    pct = re.search(r"(\d+(?:\.\d+)?)\s*%", q)
+    if not day or not (cov or pct):
+        return {}
+    return {"event_day": day, "extra_covers": int(cov.group(1)) if cov else 0,
+            "extra_pct": float(pct.group(1)) if pct else 0}
+
+
 def _location_in(q: str):
     for loc in stock_mod.LOCATIONS:          # exact name first ("back fridge")
         if loc in q:
@@ -273,12 +391,31 @@ def _location_in(q: str):
     return None
 
 
-HELP = ("I can answer from this app's data:\n" + "\n".join(f"- {q}" for q in SUGGESTED_QUESTIONS) +
+HELP = ("I can answer from this app's data:\n" + "\n".join(f"- {q}" for q in MANAGER_QUESTIONS + SUGGESTED_QUESTIONS) +
         "\n\nI only advise — approvals happen on the Prep plan and Ordering pages.")
 
 
 def answer_offline(question: str, data: AppData) -> dict:
     q = question.lower()
+    ev = _event_in(q)
+    weekish = any(w in q for w in ("next week", "weekly", "this week", "for the week", "week's", "event"))
+    if ev or "risk" in q or (weekish and any(w in q for w in ("order", "plan", "stock", "buy", "risk", "event"))):
+        args = dict(ev)
+        if "risk" in q and not ev and not any(w in q for w in ("order", "plan")):
+            k = run_tool("get_week_risks", data, args)
+            text = (f"**Risks for the week from {k['week_start']}:**\n{_fmt_risks(k)}\n\n**Next step:** review the "
+                    f"draft on **Weekly order** and approve or edit it.\n\n**Why:** weekly order plan vs stock batches by "
+                    f"expiry, sell-outs and waste rates in the sales history (synthetic).")
+            return {"text": text, "tools": [{"name": "get_week_risks", "args": args, "result": k}], "mode": "offline"}
+        w = run_tool("get_weekly_order", data, args)
+        k = run_tool("get_week_risks", data, args)
+        out = {"text": _fmt_week(w, k), "mode": "offline",
+               "tools": [{"name": "get_weekly_order", "args": args, "result": w},
+                         {"name": "get_week_risks", "args": args, "result": k}]}
+        if ev:
+            out["draft_events"] = [{"date": e["date"], "extra_covers": e["extra_covers"], "extra_pct": e["extra_pct"]}
+                                   for e in w["events"]][-1:]
+        return out
     if any(w in q for w in ("order", "buy", "supplier", "purchase")):
         tool, args, fmt = "get_order_suggestions", {"days": _days_in(q, 3)}, _fmt_order
     elif any(w in q for w in ("use first", "use up", "fifo", "use it")):
@@ -319,7 +456,9 @@ SYSTEM_PROMPT = (
     "You are the kitchen assistant for a restaurant demo app with SYNTHETIC data. "
     "Answer ONLY using numbers returned by the tools; never invent or estimate numbers yourself. "
     "If the tools can't answer, say so. Always end with a short 'Why:' line naming the tool/data used. "
-    "You can only advise: you cannot approve prep plans or place orders; the manager does that in the app.")
+    "You can only advise: you cannot approve prep plans or place orders; the manager does that in the app. "
+    "For weekly orders, events and risks, answer like a restaurant manager: a short summary, the draft order by delivery, "
+    "the risks, then 'Next step: approve or edit on the Weekly order page'.")
 
 
 def _tool_specs():
