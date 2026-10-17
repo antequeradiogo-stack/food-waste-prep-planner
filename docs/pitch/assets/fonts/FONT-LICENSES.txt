@@ -1,0 +1,10 @@
+Fonts bundled with this deck (unmodified copies of the installed font files):
+
+- Raleway (Raleway-VariableFont_wght.ttf)
+  Copyright 2010 The Raleway Project Authors (impallari@gmail.com), with Reserved Font Name "Raleway".
+- Lato (Lato-Regular/Bold/Black/Italic.ttf)
+  Copyright (c) 2010-2011 by tyPoland Lukasz Dziedzic, with Reserved Font Name "Lato".
+
+Both are licensed under the SIL Open Font License, Version 1.1 (as stated in each font file's
+name table). Full licence text: https://openfontlicense.org/open-font-license-official-text/
+The fonts are bundled here only so the deck renders offline; they are not sold on their own.

@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leftover Lab: prep less, waste less. | AI for Good Hackathon 2026</title>
+<style>
+@font-face{font-family:"Raleway";src:url("assets/fonts/Raleway-VariableFont_wght.ttf") format("truetype");font-weight:100 900;font-style:normal;font-display:block}
+@font-face{font-family:"Lato";src:url("assets/fonts/Lato-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:block}
+@font-face{font-family:"Lato";src:url("assets/fonts/Lato-Italic.ttf") format("truetype");font-weight:400;font-style:italic;font-display:block}
+@font-face{font-family:"Lato";src:url("assets/fonts/Lato-Bold.ttf") format("truetype");font-weight:700;font-style:normal;font-display:block}
+@font-face{font-family:"Lato";src:url("assets/fonts/Lato-Black.ttf") format("truetype");font-weight:900;font-style:normal;font-display:block}
+:root{
+  --forest:#14452c; --forest2:#1e6b3f; --lime:#8dc63f; --lime2:#b5de6e; --limeSoft:#eef8df;
+  --mint:#e1f5ef; --mint2:#c9ece3; --aqua:#9fdcd0; --orange:#f28a1e; --orangeSoft:#fff1e2;
+  --ink:#16322a; --muted:#4c6a5f; --white:#fff;
+  --title:"Raleway","Montserrat","Century Gothic","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --body:"Lato","Segoe UI","Helvetica Neue",Arial,system-ui,sans-serif;
+  --ease:cubic-bezier(.22,.8,.24,1);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;overflow:hidden;background:#f3faf7;color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--forest2)}
+/* ---------- stage (fixed 1600x900 canvas, scaled to fit) ---------- */
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 15% 10%,#eaf7f1,#f3faf7 60%)}
+#stage{position:absolute;left:50%;top:50%;width:1600px;height:900px;transform-origin:0 0;background:var(--white);overflow:hidden;box-shadow:0 10px 50px rgba(20,69,44,.12)}
+.slide{position:absolute;inset:0;padding:64px 88px 70px;opacity:0;visibility:hidden;transform:translateX(70px);transition:opacity .55s var(--ease),transform .65s var(--ease),visibility 0s linear .65s}
+.slide.prev{transform:translateX(-70px)}
+.slide:not(.active){pointer-events:none}
+.slide.active{opacity:1;visibility:visible;transform:none;transition:opacity .55s var(--ease),transform .65s var(--ease),visibility 0s}
+/* staggered reveal */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .6s var(--ease),transform .7s var(--ease);transition-delay:calc(var(--i,0) * 110ms + 150ms)}
+.slide.in .rv{opacity:1;transform:none}
+.rv.l{transform:translateX(-34px)} .rv.r{transform:translateX(34px)} .rv.z{transform:scale(.94)}
+.slide.in .rv.l,.slide.in .rv.r,.slide.in .rv.z{transform:none}
+/* type */
+.kicker{font-family:var(--title);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:22px;color:var(--forest2);display:flex;align-items:center;gap:14px;margin:0 0 18px}
+.kicker::before{content:"";width:44px;height:6px;border-radius:3px;background:var(--lime)}
+h1,h2,h3{font-family:var(--title);margin:0;color:var(--forest);letter-spacing:-.01em}
+h2{font-size:58px;font-weight:800;line-height:1.08}
+h3{font-size:30px;font-weight:800;line-height:1.15}
+p{margin:0}
+.lead{font-size:32px;line-height:1.35;color:var(--ink)}
+.body{font-size:27px;line-height:1.4;color:var(--ink)}
+.small{font-size:21px;line-height:1.4;color:var(--muted)}
+.hl{color:var(--forest2);font-weight:900}
+.or{color:#c8650a;font-weight:900}
+.tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--title);font-weight:800;font-size:17px;letter-spacing:.06em;text-transform:uppercase;padding:7px 14px;border-radius:999px;background:var(--orangeSoft);color:#b2560a;border:2px solid #f6c48f}
+.tag.green{background:var(--limeSoft);color:var(--forest2);border-color:var(--lime2)}
+/* picture boxes */
+.pic{border-radius:28px;overflow:hidden;background:var(--mint);border:3px solid var(--mint2);box-shadow:0 18px 40px rgba(20,69,44,.14);position:relative}
+.pic img{display:block;width:100%;height:100%;object-fit:cover;object-position:top center}
+.pic .tag{position:absolute;left:18px;bottom:16px}
+/* chrome: progress, counter, nav */
+#progress{position:fixed;left:0;top:0;height:6px;width:100%;background:rgba(20,69,44,.08);z-index:50}
+#progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--forest2),var(--lime));transition:width .5s var(--ease)}
+#hud{position:fixed;right:18px;bottom:14px;z-index:50;display:flex;align-items:center;gap:8px;font-family:var(--title);font-weight:700}
+#hud button{width:46px;height:46px;border-radius:50%;border:2px solid var(--mint2);background:rgba(255,255,255,.92);font-size:20px;color:var(--forest);display:grid;place-items:center;transition:background .2s,transform .2s}
+#hud button:hover{background:var(--limeSoft);transform:scale(1.06)}
+#counter{min-width:76px;text-align:center;font-size:18px;color:var(--forest);background:rgba(255,255,255,.92);border:2px solid var(--mint2);border-radius:999px;padding:9px 12px}
+#hint{position:fixed;left:18px;bottom:16px;z-index:50;font-size:15px;color:var(--muted);background:rgba(255,255,255,.92);border:1px solid var(--mint2);border-radius:999px;padding:8px 14px;transition:opacity 1s}
+#hint.gone{opacity:0;pointer-events:none}
+.edge{position:fixed;top:12%;bottom:12%;width:5%;z-index:40;cursor:pointer}
+.edge.left{left:0;cursor:w-resize} .edge.right{right:0;cursor:e-resize}
+#blackout{position:fixed;inset:0;background:#000;z-index:200;display:none}
+#blackout.on{display:block}
+/* ---------- slide 1 ---------- */
+.s1 .wrap{display:grid;grid-template-columns:1fr 760px;gap:56px;height:100%;align-items:center}
+.brand{display:flex;align-items:center;gap:16px;margin-bottom:34px}
+.brand svg{width:64px;height:64px}
+.brand span{font-family:var(--title);font-weight:800;font-size:34px;color:var(--forest)}
+.s1 h1{font-size:84px;font-weight:900;line-height:1.02}
+.s1 h1 em{font-style:normal;color:var(--forest2);display:block;background:linear-gradient(90deg,var(--forest2),#4f9a2e);-webkit-background-clip:text;background-clip:text;color:transparent}
+.s1 .one{margin-top:30px;font-size:31px;line-height:1.4;max-width:640px}
+.s1 .who{margin-top:44px;display:flex;align-items:center;gap:18px}
+.avatar{width:66px;height:66px;border-radius:50%;background:var(--forest);color:#fff;display:grid;place-items:center;font-family:var(--title);font-weight:800;font-size:26px;box-shadow:0 0 0 6px var(--limeSoft)}
+.who b{display:block;font-family:var(--title);font-size:28px;color:var(--forest)}
+.who small{font-size:21px;color:var(--muted)}
+.hero{height:600px;animation:float 7s ease-in-out infinite}
+.blob{position:absolute;border-radius:50%;filter:blur(2px);z-index:-1}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.s1 .heroWrap{position:relative}
+.s1 .heroWrap::before{content:"";position:absolute;right:-60px;top:-50px;width:300px;height:300px;border-radius:50%;background:var(--lime2);opacity:.5}
+.s1 .heroWrap::after{content:"";position:absolute;left:-40px;bottom:-40px;width:180px;height:180px;border-radius:50%;background:var(--aqua);opacity:.55}
+.s1 .hero{position:relative;z-index:1}
+.s1 .dot{position:absolute;width:26px;height:26px;border-radius:50%;background:var(--orange);right:30px;bottom:-12px;z-index:2}
+/* ---------- slide 2 ---------- */
+.s2 .wrap{display:grid;grid-template-columns:690px 1fr;gap:40px;height:100%}
+.s2 .txt{display:flex;flex-direction:column;justify-content:center;gap:28px}
+.steps3{display:flex;flex-direction:column;gap:14px;margin-top:4px}
+.steps3 div{display:flex;align-items:center;gap:18px;font-size:29px}
+.steps3 b{width:52px;height:52px;flex:none;border-radius:16px;display:grid;place-items:center;background:var(--orangeSoft);color:#b2560a;font-family:var(--title);font-size:24px}
+.quote{border-left:8px solid var(--lime);background:var(--limeSoft);border-radius:0 20px 20px 0;padding:18px 24px;font-size:24px;line-height:1.4}
+.loopBox{position:relative;background:var(--mint);border-radius:36px;border:3px solid var(--mint2);overflow:hidden}
+.loopBox svg{width:100%;height:100%}
+.loop .node circle{fill:#fff;stroke:#e9b98a;stroke-width:5}
+.loop .node text{font-family:var(--title);font-weight:800;font-size:30px;fill:#8a4a10;text-anchor:middle;dominant-baseline:middle}
+.loop .node .n{font-size:18px;fill:#c8650a}
+.loop .arc{fill:none;stroke:#e9b98a;stroke-width:7;stroke-linecap:round}
+.loop .runner{fill:var(--orange)}
+.spin{transform-origin:330px 300px;animation:spin 3.2s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loopBox .loop{transition:opacity .8s var(--ease),transform .9s var(--ease);transform-origin:330px 300px}
+.loopBox .crack{opacity:0;transition:opacity .25s}
+.loopBox.break .crack{opacity:1;animation:shake .45s ease-in-out 2}
+.loopBox.break .arc.a3{stroke:#d8432f;stroke-dasharray:14 16}
+@keyframes shake{0%,100%{transform:translate(0)}25%{transform:translate(-6px,3px)}75%{transform:translate(6px,-3px)}}
+.loopBox.fixed .loop{opacity:.0;transform:scale(.7) rotate(-20deg)}
+.chain{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0;pointer-events:none}
+.chain .pill{opacity:0;transform:translateY(30px) scale(.9);transition:opacity .55s var(--ease),transform .6s var(--ease);display:flex;align-items:center;gap:18px;width:470px;padding:20px 26px;border-radius:24px;background:#fff;border:4px solid var(--lime);box-shadow:0 12px 26px rgba(20,69,44,.12)}
+.chain .pill b{width:58px;height:58px;flex:none;border-radius:18px;background:var(--forest);color:#fff;display:grid;place-items:center;font-family:var(--title);font-size:26px}
+.chain .pill span{font-family:var(--title);font-weight:800;font-size:36px;color:var(--forest)}
+.chain .pill small{display:block;font-family:var(--body);font-weight:400;font-size:19px;color:var(--muted)}
+.chain .arrow{opacity:0;height:44px;width:6px;background:var(--lime);border-radius:3px;position:relative;transition:opacity .4s}
+.chain .arrow::after{content:"";position:absolute;left:-9px;bottom:-6px;border:12px solid transparent;border-top:14px solid var(--lime);border-bottom:0}
+.loopBox.fixed .chain .pill,.loopBox.fixed .chain .arrow{opacity:1;transform:none}
+.loopBox.fixed .chain > :nth-child(1){transition-delay:.15s}.loopBox.fixed .chain > :nth-child(2){transition-delay:.4s}
+.loopBox.fixed .chain > :nth-child(3){transition-delay:.55s}.loopBox.fixed .chain > :nth-child(4){transition-delay:.8s}
+.loopBox.fixed .chain > :nth-child(5){transition-delay:.95s}
+.loopBox .state{position:absolute;left:24px;top:20px;pointer-events:none}
+.replay{position:absolute;right:20px;top:18px;border:2px solid var(--mint2);background:#fff;border-radius:999px;padding:8px 16px;font-size:18px;font-weight:700;color:var(--forest)}
+/* ---------- slide 3 ---------- */
+.s3 h2{font-size:52px}
+.s3 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:30px}
+.liveBtn{display:inline-flex;align-items:center;gap:14px;padding:20px 30px;border-radius:999px;background:var(--forest);color:#fff;text-decoration:none;font-family:var(--title);font-weight:800;font-size:26px;box-shadow:0 10px 0 #0c2c1c,0 18px 30px rgba(20,69,44,.3);transition:transform .15s,box-shadow .15s;white-space:nowrap}
+.liveBtn:hover{transform:translateY(3px);box-shadow:0 7px 0 #0c2c1c,0 12px 22px rgba(20,69,44,.3)}
+.liveBtn .pulse{width:16px;height:16px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 0 rgba(141,198,63,.8);animation:pulse 1.8s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 14px rgba(141,198,63,0)}100%{box-shadow:0 0 0 0 rgba(141,198,63,0)}}
+.s3 .grid{display:grid;grid-template-columns:880px 1fr;gap:40px;margin-top:30px}
+.flow{position:relative;width:880px;height:560px}
+.flow > svg{position:absolute;inset:0;overflow:visible}
+.flow .wire{fill:none;stroke:var(--mint2);stroke-width:8;stroke-linecap:round}
+.flow .dash{fill:none;stroke:var(--lime);stroke-width:5;stroke-linecap:round;stroke-dasharray:4 18;animation:dash 1.1s linear infinite}
+.flow .wire.on{stroke:var(--lime2)} .flow .dash.on{stroke:var(--forest2)}
+@keyframes dash{to{stroke-dashoffset:-22}}
+.flow .pkt{fill:var(--orange)}
+.fnode{position:absolute;border-radius:24px;border:3px solid var(--mint2);background:var(--mint);padding:14px 18px;text-align:left;display:flex;align-items:center;gap:14px;transition:transform .2s var(--ease),border-color .2s,background .2s,box-shadow .2s;box-shadow:0 8px 18px rgba(20,69,44,.08)}
+.fnode:hover{transform:translateY(-3px);border-color:var(--lime)}
+.fnode .ic{width:54px;height:54px;flex:none;border-radius:16px;background:#fff;display:grid;place-items:center}
+.fnode .ic svg{width:32px;height:32px;stroke:var(--forest2);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.fnode b{display:block;font-family:var(--title);font-weight:800;font-size:24px;line-height:1.12;color:var(--forest)}
+.fnode small{display:block;font-size:17px;color:var(--muted);margin-top:3px}
+.fnode.core{background:#fff;border-color:var(--lime)}
+.fnode.final{background:var(--forest);border-color:var(--forest)}
+.fnode.final b{color:#fff} .fnode.final small{color:#cfe9d9} .fnode.final .ic{background:var(--lime)} .fnode.final .ic svg{stroke:var(--forest)}
+.fnode.sel{border-color:var(--orange);box-shadow:0 0 0 6px rgba(242,138,30,.22),0 14px 26px rgba(20,69,44,.16);transform:translateY(-3px)}
+.fnode .num{position:absolute;right:-12px;top:-12px;width:34px;height:34px;border-radius:50%;background:var(--orange);color:#fff;font-family:var(--title);font-weight:800;font-size:17px;display:grid;place-items:center}
+.panel{background:var(--mint);border:3px solid var(--mint2);border-radius:30px;padding:26px 28px;height:560px;display:flex;flex-direction:column;gap:14px;position:relative}
+.panel h3{font-size:32px}
+.panel .ptext{font-size:23px;line-height:1.4;margin-top:8px}
+.panel .pic .tag{font-size:13px;padding:5px 10px;left:12px;bottom:10px}
+.panel .pic{flex:1;min-height:0;border-radius:22px;box-shadow:none;border:3px solid #fff;cursor:zoom-in}
+.panel .imgtabs{display:flex;gap:8px;flex-wrap:wrap}
+.panel .imgtabs button{border:2px solid var(--mint2);background:#fff;border-radius:999px;padding:5px 14px;font-size:16px;font-weight:700;color:var(--forest)}
+.panel .imgtabs button.on{background:var(--forest);border-color:var(--forest);color:#fff}
+.panel .swap{animation:swap .45s var(--ease)}
+@keyframes swap{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.panel .intro{display:flex;flex-direction:column;gap:18px;justify-content:center;height:100%}
+.panel .intro ol{margin:0;padding-left:30px;font-size:23px;line-height:1.55}
+/* ---------- slide 4 ---------- */
+.seg{display:inline-flex;background:var(--mint);border:3px solid var(--mint2);border-radius:999px;padding:6px;margin-top:26px;position:relative}
+.seg button{position:relative;z-index:1;border:0;background:transparent;font-family:var(--title);font-weight:800;font-size:24px;padding:14px 30px;border-radius:999px;color:var(--forest);transition:color .3s}
+.seg button[aria-selected="true"]{color:#fff}
+.seg .knob{position:absolute;top:6px;bottom:6px;left:6px;border-radius:999px;background:var(--forest);transition:left .45s var(--ease),width .45s var(--ease)}
+.seg .knob.est{background:#c8650a}
+.tabpane{position:absolute;left:88px;right:88px;top:290px;bottom:118px;opacity:0;visibility:hidden;transform:translateY(18px);transition:opacity .45s var(--ease),transform .5s var(--ease),visibility 0s linear .5s}
+.tabpane.on{opacity:1;visibility:inherit;transform:none;transition:opacity .45s var(--ease),transform .5s var(--ease),visibility 0s}
+.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;height:100%}
+.card{background:var(--mint);border:3px solid var(--mint2);border-radius:26px;padding:22px 26px;display:flex;gap:18px;align-items:flex-start}
+.card .ck{width:48px;height:48px;flex:none;border-radius:50%;background:var(--lime);display:grid;place-items:center}
+.card .ck svg{width:26px;height:26px;stroke:var(--forest);stroke-width:3.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.card h3{font-size:31px;margin-bottom:8px}
+.card p{font-size:25px;line-height:1.4}
+.est-grid{display:grid;grid-template-columns:640px 1fr;gap:34px;height:100%}
+.method{background:var(--orangeSoft);border:3px solid #f6c48f;border-radius:26px;padding:24px 28px;display:flex;flex-direction:column;gap:14px}
+.method h3{color:#8a4a10;font-size:30px}
+.method ol{margin:0;padding-left:34px;font-size:27px;line-height:1.45}
+.method ol li{margin-bottom:12px}
+.illu{background:#fff;border:3px dashed #f2b36f;border-radius:26px;padding:20px 28px;display:flex;flex-direction:column;gap:10px;position:relative}
+.illu .head{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.illu .head b{font-family:var(--title);font-size:24px;color:var(--forest)}
+.illu .head .tag{white-space:nowrap}
+.bars{flex:1;display:flex;align-items:flex-end;justify-content:center;gap:90px;padding:6px 0 0;border-bottom:4px solid var(--mint2);min-height:0}
+.bar{width:170px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bar .v{font-family:var(--title);font-weight:800;font-size:26px;color:var(--forest);margin-bottom:8px}
+.bar .col{width:100%;border-radius:18px 18px 0 0;background:repeating-linear-gradient(135deg,#d6dcd9 0 12px,#e5eae7 12px 24px);transition:height .35s var(--ease)}
+.bar.after .col{background:repeating-linear-gradient(135deg,var(--lime) 0 12px,var(--lime2) 12px 24px)}
+.barlabels{display:flex;justify-content:center;gap:0;font-size:19px;color:var(--muted);text-align:center}
+.barlabels span{width:260px}
+.sl{display:flex;align-items:center;gap:18px;font-size:21px}
+.sl input{flex:1;accent-color:var(--orange);height:34px}
+.sl output{font-family:var(--title);font-weight:900;font-size:30px;color:#c8650a;min-width:80px;text-align:right}
+.context{position:absolute;left:88px;right:88px;bottom:40px;font-size:19px;color:var(--muted);line-height:1.35}
+/* ---------- slide 5 ---------- */
+.s5 .wrap{display:grid;grid-template-columns:1fr 560px;gap:40px;margin-top:34px}
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.rcard{background:var(--mint);border:3px solid var(--mint2);border-radius:26px;padding:22px 24px}
+.rcard .ri{width:52px;height:52px;border-radius:16px;background:#fff;display:grid;place-items:center;margin-bottom:12px}
+.rcard .ri svg{width:30px;height:30px;stroke:var(--forest2);fill:none;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+.rcard h3{font-size:27px;margin-bottom:8px}
+.rcard p{font-size:21px;line-height:1.38}
+.rcard.limits{background:var(--orangeSoft);border-color:#f6c48f}
+.rcard.limits .ri svg{stroke:#c8650a}
+.next{background:var(--forest);color:#fff;border-radius:30px;padding:30px 32px;display:flex;flex-direction:column;gap:18px;position:relative;overflow:hidden}
+.next .tag{align-self:flex-start;background:var(--lime);color:var(--forest);border-color:var(--lime)}
+.next h3{color:#fff;font-size:36px;line-height:1.15}
+.next p{font-size:22px;line-height:1.4;color:#d9efe2}
+.gw{display:flex;flex-direction:column;gap:0;align-items:stretch;margin-top:6px}
+.gw .g{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.1);border:2px solid rgba(181,222,110,.5);border-radius:18px;padding:11px 16px;font-family:var(--title);font-weight:700;font-size:21px}
+.gw .g i{width:12px;height:12px;border-radius:50%;background:var(--lime);flex:none}
+.gw .lk{height:26px;margin-left:28px;width:4px;background:repeating-linear-gradient(180deg,var(--lime) 0 6px,transparent 6px 12px);background-size:4px 12px;animation:drip .8s linear infinite}
+@keyframes drip{to{background-position:0 12px}}
+/* ---------- slide 6 ---------- */
+.gallery{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;margin-top:28px}
+.thumb{border:3px solid var(--mint2);background:var(--mint);border-radius:20px;padding:0;overflow:hidden;text-align:left;transition:transform .2s var(--ease),border-color .2s}
+.thumb:hover{transform:translateY(-4px) scale(1.02);border-color:var(--lime)}
+.thumb img{display:block;width:100%;height:190px;object-fit:cover;object-position:left top}
+.thumb span{display:block;padding:9px 12px;font-family:var(--title);font-weight:800;font-size:18px;color:var(--forest)}
+.disc{margin-top:26px;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.disc div{background:var(--limeSoft);border-radius:20px;padding:16px 20px;font-size:21px;line-height:1.38;border:2px solid var(--lime2)}
+.disc b{font-family:var(--title);color:var(--forest)}
+/* ---------- lightbox ---------- */
+#lb{position:fixed;inset:0;z-index:120;background:rgba(9,32,20,.88);display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:3vh 6vw}
+#lb.on{display:flex;animation:fade .25s}
+@keyframes fade{from{opacity:0}}
+#lb img{max-width:100%;max-height:80vh;border-radius:18px;background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+#lb .cap{color:#fff;font-family:var(--title);font-weight:700;font-size:clamp(16px,2vw,26px);text-align:center}
+#lb .cap small{display:block;font-family:var(--body);font-weight:400;font-size:.7em;color:#cfe9d9;margin-top:4px}
+#lb button{position:absolute;border:0;background:rgba(255,255,255,.14);color:#fff;width:56px;height:56px;border-radius:50%;font-size:26px}
+#lb button:hover{background:rgba(255,255,255,.28)}
+#lb .x{top:18px;right:18px} #lb .p{left:18px;top:50%} #lb .n{right:18px;top:50%}
+/* ---------- notes & help ---------- */
+#notes{position:fixed;left:0;right:0;bottom:0;z-index:100;background:rgba(12,40,26,.97);color:#eaf6ef;padding:16px 26px 20px;max-height:40vh;overflow:auto;transform:translateY(105%);transition:transform .35s var(--ease);font-size:18px;line-height:1.5;border-top:5px solid var(--lime)}
+#notes.on{transform:none}
+#notes .nh{display:flex;justify-content:space-between;align-items:center;gap:18px;font-family:var(--title);font-weight:800;margin-bottom:6px;color:var(--lime2)}
+#notes .clock{font-variant-numeric:tabular-nums;background:rgba(255,255,255,.1);border-radius:999px;padding:4px 12px;color:#fff}
+#notes p{margin:0 0 8px} #notes b{color:#fff}
+#help{position:fixed;inset:0;z-index:110;background:rgba(9,32,20,.6);display:none;align-items:center;justify-content:center}
+#help.on{display:flex}
+#help .box{background:#fff;border-radius:26px;padding:28px 34px;max-width:620px;font-size:18px;line-height:1.6;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+#help h3{font-size:26px;margin-bottom:10px}
+#help kbd{display:inline-block;min-width:30px;text-align:center;font-family:var(--body);font-weight:700;background:var(--mint);border:2px solid var(--mint2);border-radius:8px;padding:1px 8px;margin-right:4px}
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition-duration:.01ms!important;transition-delay:0s!important}
+  .flow .pkt,.spin{display:none}
+}
+.reduce *,.reduce *::before,.reduce *::after{animation:none!important;transition-duration:.01ms!important;transition-delay:0s!important}
+.reduce .flow .pkt,.reduce .spin{display:none}
+</style>
+</head>
+<body>
+<div id="progress"><i></i></div>
+<div id="viewport"><div id="stage">
+
+<!-- ================= 1. TITLE ================= -->
+<section class="slide s1" data-title="Title">
+  <div class="wrap">
+    <div>
+      <div class="brand rv" style="--i:0">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#14452c"/><path d="M20 42c0-14 10-22 26-23-1 16-9 26-23 26" fill="#8dc63f"/><path d="M20 46c5-9 11-15 19-19" stroke="#14452c" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+        <span>Leftover Lab</span>
+      </div>
+      <h1 class="rv" style="--i:1">Leftover Lab:<em>prep less, waste&nbsp;less.</em></h1>
+      <p class="one rv" style="--i:2">For restaurant kitchens that <span class="hl">guess every morning</span> and <span class="or">throw food away every night</span>.</p>
+      <div class="who rv" style="--i:3">
+        <div class="avatar">DA</div>
+        <div><b>Diogo Antequera</b><small>AI for Good Hackathon 2026 · Oslo, BI Startup Village</small></div>
+      </div>
+    </div>
+    <div class="heroWrap rv r" style="--i:2">
+      <div class="pic hero"><img src="assets/img/home_hero.jpg" alt="Leftover Lab home screen: today's plan at a glance and waste trend (synthetic data)"><span class="tag">Synthetic demo data</span></div>
+      <div class="dot"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 2. PROBLEM ================= -->
+<section class="slide s2" data-title="The problem">
+  <div class="wrap">
+    <div class="txt">
+      <div>
+        <div class="kicker rv" style="--i:0">The problem</div>
+        <h2 class="rv" style="--i:1">Every morning a guess.<br>Every night, the bin.</h2>
+      </div>
+      <div class="steps3 rv" style="--i:2">
+        <div><b>1</b><span><strong>Guess</strong> how much to prep</span></div>
+        <div><b>2</b><span><strong>Prep</strong> it, serve what sells</span></div>
+        <div><b>3</b><span><strong>Throw away</strong> the rest</span></div>
+      </div>
+      <p class="body rv" style="--i:3">Nobody measures the waste, <span class="or">so tomorrow is another guess.</span></p>
+      <p class="quote rv" style="--i:4">I work in a restaurant kitchen. This loop is from my own experience, not a survey.</p>
+    </div>
+    <div class="loopBox rv z" id="loopBox" style="--i:2">
+      <svg viewBox="0 0 660 640" aria-label="Animated loop: guess, prep, throw away, which breaks into measure, predict, approve">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L10 5L0 10z" fill="#e9b98a"/></marker></defs>
+        <g class="loop">
+          <path class="arc a1" d="M400 145 A190 190 0 0 1 505 395" marker-end="url(#ah)"/>
+          <path class="arc a2" d="M425 470 A190 190 0 0 1 235 470" marker-end="url(#ah)"/>
+          <path class="arc a3" d="M155 395 A190 190 0 0 1 260 145" marker-end="url(#ah)"/>
+          <g class="spin"><circle class="runner" cx="330" cy="110" r="13"/></g>
+          <g class="node"><circle cx="330" cy="110" r="78"/><text class="n" x="330" y="78">1</text><text x="330" y="118">Guess</text></g>
+          <g class="node"><circle cx="495" cy="395" r="78"/><text class="n" x="495" y="363">2</text><text x="495" y="403">Prep</text></g>
+          <g class="node"><circle cx="165" cy="395" r="78"/><text class="n" x="165" y="355">3</text><text x="165" y="390">Throw</text><text x="165" y="424">away</text></g>
+          <text x="330" y="300" text-anchor="middle" font-family="Lato" font-size="22" fill="#8a4a10">no measurement</text>
+          <text x="330" y="330" text-anchor="middle" font-family="Lato" font-size="22" fill="#8a4a10">→ repeat tomorrow</text>
+          <g class="crack"><path d="M196 236 l-26 16 l18 8 l-22 18" stroke="#d8432f" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+        </g>
+      </svg>
+      <div class="chain" aria-hidden="false">
+        <div class="pill"><b>1</b><span>Measure<small>what goes in the bin and back on plates</small></span></div>
+        <div class="arrow"></div>
+        <div class="pill"><b>2</b><span>Predict<small>tomorrow's prep from real history</small></span></div>
+        <div class="arrow"></div>
+        <div class="pill"><b>3</b><span>Approve<small>a person decides, every time</small></span></div>
+      </div>
+      <span class="tag state" id="loopState">Today's loop</span>
+      <button class="replay" id="replay" title="Replay animation">↻ Replay</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 3. DEMO ================= -->
+<section class="slide s3" data-title="The demo">
+  <div class="top">
+    <div>
+      <div class="kicker rv" style="--i:0">The demo · synthetic data</div>
+      <h2 class="rv" style="--i:1">Measure, predict, and a person approves</h2>
+    </div>
+    <a class="liveBtn rv r" style="--i:2" href="https://food-waste-prep-planner-wnw7editxksh4mdqznqbal.streamlit.app/" target="_blank" rel="noopener"><span class="pulse"></span>Open the live app ↗</a>
+  </div>
+  <div class="grid">
+    <div class="flow rv" style="--i:2" id="flow">
+      <svg viewBox="0 0 880 560" aria-hidden="true">
+        <defs><marker id="ah2" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#1e6b3f"/></marker></defs>
+        <g id="wires">
+          <path class="wire" data-w="stock" d="M262 75 C300 75 292 280 328 280"/>
+          <path class="wire" data-w="bin" d="M262 280 L328 280"/>
+          <path class="wire" data-w="plate" d="M262 485 C300 485 292 280 328 280"/>
+          <path class="wire" data-w="forecast" d="M542 280 C585 280 578 145 618 145"/>
+          <path class="wire" data-w="suggest" d="M740 202 L740 356"/>
+        </g>
+        <g id="dashes">
+          <path class="dash" id="p1" data-w="stock" d="M262 75 C300 75 292 280 328 280"/>
+          <path class="dash" id="p2" data-w="bin" d="M262 280 L328 280"/>
+          <path class="dash" id="p3" data-w="plate" d="M262 485 C300 485 292 280 328 280"/>
+          <path class="dash" id="p4" data-w="forecast" d="M542 280 C585 280 578 145 618 145" marker-end="url(#ah2)"/>
+          <path class="dash" id="p5" data-w="suggest" d="M740 202 L740 352" marker-end="url(#ah2)"/>
+        </g>
+        <circle class="pkt" r="8"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#p1"/></animateMotion></circle>
+        <circle class="pkt" r="8"><animateMotion dur="1.6s" begin=".5s" repeatCount="indefinite"><mpath href="#p2"/></animateMotion></circle>
+        <circle class="pkt" r="8"><animateMotion dur="2.2s" begin="1s" repeatCount="indefinite"><mpath href="#p3"/></animateMotion></circle>
+        <circle class="pkt" r="8"><animateMotion dur="2s" begin=".3s" repeatCount="indefinite"><mpath href="#p4"/></animateMotion></circle>
+        <circle class="pkt" r="8"><animateMotion dur="1.8s" begin=".9s" repeatCount="indefinite"><mpath href="#p5"/></animateMotion></circle>
+      </svg>
+      <button class="fnode" data-node="stock" style="left:0;top:20px;width:262px;height:110px"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 12h18M8 8h2M8 16h2"/></svg></span><span><b>Stock cameras &amp; scales</b><small>shelves &amp; fridges</small></span></button>
+      <button class="fnode" data-node="bin" style="left:0;top:225px;width:262px;height:110px"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span><span><b>Kitchen bin camera</b><small>+ scale for grams</small></span></button>
+      <button class="fnode" data-node="plate" style="left:0;top:430px;width:262px;height:110px"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/></svg></span><span><b>Plate-return camera</b><small>leftovers on plates</small></span></button>
+      <button class="fnode core" data-node="forecast" style="left:328px;top:225px;width:214px;height:110px"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 17l5-5 4 3 8-8M15 7h5v5"/></svg></span><span><b>Forecast</b><small>tomorrow's portions</small></span></button>
+      <button class="fnode core" data-node="suggest" style="left:618px;top:90px;width:244px;height:112px"><span class="ic"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg></span><span><b>Suggestion</b><small>prep &amp; order, with reasons</small></span></button>
+      <button class="fnode final" data-node="approve" style="left:618px;top:356px;width:244px;height:124px"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span><span><b>Manager approves</b><small>nothing happens automatically</small></span></button>
+    </div>
+    <div class="panel rv r" style="--i:3" id="panel" aria-live="polite">
+      <div class="intro" id="panelIntro">
+        <span class="tag green" style="align-self:flex-start">Click any step</span>
+        <h3>From three data streams to one human decision</h3>
+        <ol>
+          <li><b>Measure:</b> stock, the kitchen bin, plates coming back</li>
+          <li><b>Predict:</b> tomorrow's portions, with reasons</li>
+          <li><b>Approve:</b> the manager edits and signs off</li>
+        </ol>
+        <p class="small">Each step opens the matching screen of the working app.</p>
+      </div>
+      <div id="panelBody" hidden>
+        <h3 id="pTitle"></h3>
+        <p class="ptext" id="pText"></p>
+        <div class="imgtabs" id="pTabs"></div>
+      </div>
+      <div class="pic" id="pPic" hidden><img id="pImg" alt=""><span class="tag">Synthetic data · click to enlarge</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 4. IMPACT ================= -->
+<section class="slide s4" data-title="Impact & measurement">
+  <div class="kicker rv" style="--i:0">Impact · and how we'd measure it</div>
+  <h2 class="rv" style="--i:1">What works today, and what we still have to prove</h2>
+  <div class="seg rv" style="--i:2" role="tablist" id="seg">
+    <span class="knob" id="knob"></span>
+    <button role="tab" aria-selected="true" data-tab="demo" id="tabDemo">✓ Demonstrated today</button>
+    <button role="tab" aria-selected="false" data-tab="est" id="tabEst">◔ Estimated / to be measured</button>
+  </div>
+  <div class="tabpane on" id="pane-demo" role="tabpanel">
+    <div class="demo-grid">
+      <div class="card"><span class="ck"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span><div><h3>Prep suggestions</h3><p>A working prototype, on synthetic data: portions per dish from the same weekday in recent weeks, plus a buffer, with the reason shown.</p></div></div>
+      <div class="card"><span class="ck"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span><div><h3>Plate-leftover estimates</h3><p>Buckets of none / 25 / 50 / 75 / 100% × recipe grams, <b>confirmed by a person</b> before they're logged.</p></div></div>
+      <div class="card"><span class="ck"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span><div><h3>Stock tracking</h3><p>A shelf camera counts packs, scales weigh the rest. Staff confirm before stock changes.</p></div></div>
+      <div class="card"><span class="ck"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span><div><h3>Order suggestions</h3><p>Forecast × recipe grams minus stock, rounded to supplier packs. Exported for a person to place. The app never orders by itself.</p></div></div>
+    </div>
+  </div>
+  <div class="tabpane" id="pane-est" role="tabpanel">
+    <div class="est-grid">
+      <div class="method">
+        <span class="tag" style="align-self:flex-start">Not measured yet</span>
+        <h3>Real waste reduction: we will measure it, not claim it</h3>
+        <ol>
+          <li><b>One kitchen</b>, a 4-week pilot.</li>
+          <li><b>Before:</b> daily waste logs from how the kitchen works today.</li>
+          <li><b>After:</b> the same kitchen preps with Leftover Lab.</li>
+          <li><b>Compare</b> daily waste logs, before vs after.</li>
+        </ol>
+      </div>
+      <div class="illu">
+        <div class="head"><b>The pilot would compare</b><span class="tag">Illustration · not a result</span></div>
+        <div class="sl"><label for="red">Waste reduction you want to try:</label><input type="range" id="red" min="0" max="60" step="5" value="0" aria-describedby="illuNote"><output id="redOut" for="red">0%</output></div>
+        <div class="bars" id="bars">
+          <div class="bar"><span class="v">100</span><div class="col" style="height:100%"></div></div>
+          <div class="bar after"><span class="v" id="afterV">100</span><div class="col" id="afterCol" style="height:100%"></div></div>
+        </div>
+        <div class="barlabels"><span>Before<br>(daily waste, indexed to 100)</span><span>After 4 weeks<br>(your example value)</span></div>
+        <p class="small" id="illuNote">You choose the % with the slider. These bars show no data and are not a result.</p>
+      </div>
+    </div>
+  </div>
+  <p class="context rv" style="--i:4">Context: UNEP's <i>Food Waste Index Report 2024</i> stresses <b>measuring</b> food waste, including in food service, to track progress towards SDG&nbsp;12.3. <a href="https://www.unep.org/resources/publication/food-waste-index-report-2024" target="_blank" rel="noopener">unep.org/resources/publication/food-waste-index-report-2024</a></p>
+</section>
+
+<!-- ================= 5. RESPONSIBLE AI ================= -->
+<section class="slide s5" data-title="Responsible AI & next step">
+  <div class="kicker rv" style="--i:0">Responsible AI · next step</div>
+  <h2 class="rv" style="--i:1">People decide. The cameras look at food.</h2>
+  <div class="wrap">
+    <div class="rgrid">
+      <div class="rcard rv" style="--i:2"><div class="ri"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></div><h3>All data is synthetic</h3><p>No real restaurant, guest or supplier data in the demo.</p></div>
+      <div class="rcard rv" style="--i:3"><div class="ri"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></div><h3>Humans approve everything</h3><p>Every prep plan, order and waste entry. Nothing is ordered or thrown out automatically.</p></div>
+      <div class="rcard rv" style="--i:4"><div class="ri"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></svg></div><h3>Food only, no faces</h3><p>Cameras point at plates, bins and shelves. They estimate food; no faces are stored.</p></div>
+      <div class="rcard limits rv" style="--i:5"><div class="ri"><svg viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></svg></div><h3>Honest limits</h3><p>Without a scale, these are estimates, not exact weights. Forecasts need weeks of real data.</p></div>
+    </div>
+    <div class="next rv r" style="--i:4">
+      <span class="tag">Next step</span>
+      <h3>A one-kitchen pilot, with a real scale</h3>
+      <p>A scale connects through a small local gateway, so we measure grams instead of estimating them.</p>
+      <div class="gw">
+        <div class="g"><i></i>Kitchen scale (+ cameras)</div><div class="lk"></div>
+        <div class="g"><i></i>Local gateway in the kitchen</div><div class="lk"></div>
+        <div class="g"><i></i>Leftover Lab → staff confirm</div><div class="lk"></div>
+        <div class="g"><i></i>Manager approves the plan</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 6. BACKUP ================= -->
+<section class="slide s6" data-title="Backup: screenshots & disclosure">
+  <div class="kicker rv" style="--i:0">Backup</div>
+  <h2 class="rv" style="--i:1">The flow, screen by screen</h2>
+  <div class="gallery rv" style="--i:2" id="gallery"></div>
+  <div class="disc rv" style="--i:3">
+    <div><b>AI disclosure.</b> Built with help from AI tools (AI coding assistants).</div>
+    <div><b>Synthetic data.</b> Every number on screen comes from synthetic data. None of it is a result.</div>
+    <div><b>Open source.</b> <a href="https://github.com/antequeradiogo-stack/food-waste-prep-planner" target="_blank" rel="noopener">github.com/antequeradiogo-stack/<wbr>food-waste-prep-planner</a></div>
+  </div>
+</section>
+
+</div></div>
+
+<div class="edge left" id="edgeL" title="Previous"></div><div class="edge right" id="edgeR" title="Next"></div>
+<div id="hud"><button id="prevBtn" aria-label="Previous slide">‹</button><span id="counter">1 / 6</span><button id="nextBtn" aria-label="Next slide">›</button><button id="fsBtn" aria-label="Fullscreen (F)" title="Fullscreen (F)">⛶</button></div>
+<div id="hint">← → / Space to navigate · <b>F</b> fullscreen · <b>N</b> notes · <b>?</b> help</div>
+<div id="lb" role="dialog" aria-modal="true" aria-label="Screenshot viewer"><button class="x" aria-label="Close">✕</button><button class="p" aria-label="Previous screenshot">‹</button><img alt=""><div class="cap"></div><button class="n" aria-label="Next screenshot">›</button></div>
+<div id="notes" aria-live="polite"><div class="nh"><span id="notesTitle"></span><span class="clock" id="clock" title="Elapsed since first slide change (press T to reset)">0:00</span></div><div id="notesBody"></div></div>
+<div id="help"><div class="box"><h3>Controls</h3>
+<div><kbd>→</kbd><kbd>Space</kbd><kbd>PgDn</kbd> next · <kbd>←</kbd><kbd>PgUp</kbd> previous</div>
+<div><kbd>Home</kbd><kbd>End</kbd> first / last · <kbd>1</kbd>–<kbd>6</kbd> jump to slide</div>
+<div>Click the arrows or the screen edges · swipe on touch screens</div>
+<div><kbd>F</kbd> fullscreen · <kbd>N</kbd> speaker notes · <kbd>T</kbd> reset timer · <kbd>B</kbd> black screen</div>
+<div><kbd>Esc</kbd> close viewer / notes / help · <kbd>?</kbd> this help</div>
+<p class="small" style="margin-top:10px">Works offline. Only "Open the live app" and the GitHub/UNEP links need internet.</p></div></div>
+<div id="blackout"></div>
+
+<script>
+(function(){
+"use strict";
+var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (/[?&]reduce=1/.test(location.search)) reduce = true;
+if (reduce) document.documentElement.classList.add("reduce");
+
+/* ---------- scaling ---------- */
+var stage = document.getElementById("stage");
+function fit(){
+  var s = Math.min(window.innerWidth/1600, window.innerHeight/900);
+  stage.style.transform = "translate(-50%,-50%) scale(" + s + ")";
+  stage.style.transformOrigin = "50% 50%";
+}
+window.addEventListener("resize", fit); fit();
+
+/* ---------- speaker notes ---------- */
+var NOTES = [
+ {t:"0:00–0:10 · Title", n:"<p>Hi, I'm <b>Diogo</b>. I work in a restaurant kitchen. This is <b>Leftover Lab: prep less, waste less.</b> It's for kitchens that guess every morning and throw food away every night.</p>"},
+ {t:"0:10–0:30 · The problem", n:"<p>Picture the head chef at ten in the morning, deciding how much to prep. Today that's a guess, based on gut feeling and how yesterday went.</p><p>At night, whatever didn't sell goes in the bin. <b>Nobody measures what goes in the bin</b>, so the next morning is another guess. I've seen this loop from the inside.</p><p><i>(The loop breaks on screen.)</i> Leftover Lab turns it into <b>measure, predict, approve</b>.</p>"},
+ {t:"0:30–2:00 · Demo (live app if Wi-Fi works; otherwise click the nodes)", n:"<p><b>Everything you'll see runs on synthetic data.</b></p><p><b>Three streams in.</b> Stock: shelf cameras count packs, scales weigh the rest, and staff confirm. The kitchen bin: a camera plus a scale for the grams. Plates coming back: a camera estimates the leftover as none, 25, 50, 75 or 100 percent, times the recipe grams. <b>Staff confirm or correct it.</b></p><p><b>Forecast:</b> the same weekday over recent weeks, plus a buffer the chef sets. Every row shows its reason.</p><p><b>Suggestion:</b> prep per dish, and an order list. That's forecast times recipe grams, minus stock, rounded to supplier packs. The assistant explains the why from the app's own data.</p><p><b>Manager approves:</b> nothing is prepped, ordered or logged automatically. The manager edits, types their role and clicks approve. The assumptions and limits are right there in the app.</p>"},
+ {t:"2:00–2:30 · Impact & measurement", n:"<p><b>Demonstrated today:</b> a working prototype on synthetic data. It does prep suggestions, plate-leftover estimates that a person confirms, stock tracking with a shelf camera and scales, and order suggestions.</p><p><b>Not measured yet:</b> real waste reduction. We'll measure it with a 4-week pilot in one kitchen, comparing daily waste logs from before and after. <i>(Toggle tab.)</i> This slider is only an illustration. You pick the number, and it's not a result.</p><p>UNEP's Food Waste Index Report 2024 makes the same point: measuring food waste, food service included, is how you track progress.</p>"},
+ {t:"2:30–3:00 · Responsible AI, limits, next step", n:"<p>All the data is synthetic. <b>People approve every prep plan, order and waste entry.</b> The cameras look at food, not people, and no faces are stored.</p><p>Two honest limits: without a scale these are estimates, not exact weights, and forecasts need weeks of real data.</p><p><b>Next step:</b> a one-kitchen pilot with a scale connected through a local gateway. Thank you!</p>"},
+ {t:"Backup · Q&A only", n:"<p>Click any screenshot to enlarge it, and use ← → inside the viewer.</p><p><b>Disclosure:</b> built with help from AI tools (AI coding assistants). The data is synthetic. Open source at github.com/antequeradiogo-stack/food-waste-prep-planner.</p><p>Likely questions: <b>How accurate is the plate estimate?</b> It hasn't been validated yet. The pilot weighs a sample of plates to calibrate it. <b>Privacy?</b> Cameras sit only at the plate return, bin and shelves, pointed at food, and the demo stores no photos. <b>Can it place orders?</b> No. It only exports a list for a person.</p>"}
+];
+
+/* ---------- navigation ---------- */
+var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+var cur = -1, bar = document.querySelector("#progress i"), counter = document.getElementById("counter");
+var notes = document.getElementById("notes");
+function go(i, instant){
+  i = Math.max(0, Math.min(slides.length-1, i));
+  if (i === cur) return;
+  if (cur >= 0 && !timerStart) timerStart = Date.now();
+  slides.forEach(function(s, k){
+    s.classList.toggle("active", k === i);
+    s.classList.toggle("prev", k < i);
+    if (k !== i) s.classList.remove("in");
+    s.setAttribute("aria-hidden", k === i ? "false" : "true");
+  });
+  var s = slides[i];
+  if (instant || reduce) s.classList.add("in");
+  else requestAnimationFrame(function(){ requestAnimationFrame(function(){ s.classList.add("in"); }); });
+  cur = i;
+  bar.style.width = ((i+1)/slides.length*100) + "%";
+  counter.textContent = (i+1) + " / " + slides.length;
+  document.getElementById("notesTitle").textContent = "Slide " + (i+1) + " · " + NOTES[i].t;
+  document.getElementById("notesBody").innerHTML = NOTES[i].n;
+  if (history.replaceState) history.replaceState(null, "", "#" + (i+1));
+  if (i === 1) startLoop(); else stopLoop();
+}
+function next(){ go(cur+1); } function prev(){ go(cur-1); }
+document.getElementById("nextBtn").onclick = next;
+document.getElementById("prevBtn").onclick = prev;
+document.getElementById("edgeR").onclick = next;
+document.getElementById("edgeL").onclick = prev;
+document.getElementById("fsBtn").onclick = toggleFs;
+function toggleFs(){
+  if (!document.fullscreenElement) { var r = document.documentElement.requestFullscreen; if (r) r.call(document.documentElement).catch(function(){}); }
+  else if (document.exitFullscreen) document.exitFullscreen().catch(function(){});
+}
+
+/* keyboard */
+var lb = document.getElementById("lb"), help = document.getElementById("help"), black = document.getElementById("blackout");
+document.addEventListener("keydown", function(e){
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  var tag = (e.target && e.target.tagName) || "";
+  var inInput = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+  var k = e.key;
+  if (lb.classList.contains("on")) {
+    if (k === "Escape") closeLb();
+    else if (k === "ArrowRight" || k === "PageDown" || k === " ") { lbStep(1); }
+    else if (k === "ArrowLeft" || k === "PageUp") { lbStep(-1); }
+    e.preventDefault(); return;
+  }
+  if (k === "Escape") { help.classList.remove("on"); notes.classList.remove("on"); black.classList.remove("on"); return; }
+  if (inInput && (k === "ArrowLeft" || k === "ArrowRight" || k === "ArrowUp" || k === "ArrowDown" || k === "Home" || k === "End")) return;
+  if (black.classList.contains("on") && k !== "b" && k !== "B" && k !== ".") { black.classList.remove("on"); }
+  switch (k) {
+    case "ArrowRight": case "ArrowDown": case "PageDown": case " ": case "Spacebar": next(); break;
+    case "ArrowLeft": case "ArrowUp": case "PageUp": case "Backspace": prev(); break;
+    case "Home": go(0); break;
+    case "End": go(slides.length-1); break;
+    case "f": case "F": toggleFs(); break;
+    case "n": case "N": notes.classList.toggle("on"); break;
+    case "t": case "T": timerStart = Date.now(); tick(); break;
+    case "b": case "B": case ".": black.classList.toggle("on"); break;
+    case "?": case "h": case "H": help.classList.toggle("on"); break;
+    default:
+      if (/^[1-6]$/.test(k)) go(parseInt(k,10)-1); else return;
+  }
+  e.preventDefault();
+  hideHint();
+});
+help.addEventListener("click", function(){ help.classList.remove("on"); });
+black.addEventListener("click", function(){ black.classList.remove("on"); });
+
+/* swipe */
+var sx = null, sy = null;
+document.addEventListener("pointerdown", function(e){ if (e.pointerType === "touch" || e.pointerType === "pen") { sx = e.clientX; sy = e.clientY; } }, {passive:true});
+document.addEventListener("pointerup", function(e){
+  if (sx === null) return;
+  var dx = e.clientX - sx, dy = e.clientY - sy; sx = null;
+  if (e.target && e.target.type === "range") return;
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+    if (lb.classList.contains("on")) lbStep(dx < 0 ? 1 : -1); else (dx < 0 ? next : prev)();
+  }
+}, {passive:true});
+document.addEventListener("touchmove", function(e){ if (e.target && e.target.type !== "range") e.preventDefault(); }, {passive:false});
+
+/* hint + timer */
+var hint = document.getElementById("hint");
+function hideHint(){ hint.classList.add("gone"); }
+setTimeout(hideHint, 7000);
+var timerStart = 0, clock = document.getElementById("clock");
+function tick(){
+  var s = timerStart ? Math.floor((Date.now()-timerStart)/1000) : 0;
+  clock.textContent = Math.floor(s/60) + ":" + ("0" + (s%60)).slice(-2) + (timerStart ? "" : " (starts on next slide)");
+  clock.style.color = s > 180 ? "#ffb36b" : "";
+}
+setInterval(tick, 500);
+
+/* ---------- slide 2 loop ---------- */
+var loopBox = document.getElementById("loopBox"), loopState = document.getElementById("loopState"), loopTimers = [];
+function setLoop(state){
+  loopBox.classList.remove("break","fixed");
+  if (state === "break") loopBox.classList.add("break");
+  if (state === "fixed") loopBox.classList.add("fixed");
+  loopState.textContent = state === "fixed" ? "With Leftover Lab" : "Today's loop";
+  loopState.className = "tag state" + (state === "fixed" ? " green" : "");
+}
+function stopLoop(){ loopTimers.forEach(clearTimeout); loopTimers = []; }
+function startLoop(){
+  stopLoop();
+  if (reduce) { setLoop("fixed"); return; }
+  setLoop("loop");
+  loopTimers.push(setTimeout(function(){ setLoop("break"); }, 3600));
+  loopTimers.push(setTimeout(function(){ setLoop("fixed"); }, 4700));
+}
+document.getElementById("replay").onclick = startLoop;
+
+/* ---------- slide 3 flow ---------- */
+var IMG = "assets/img/";
+var NODES = {
+  stock:   {title:"Stock cameras & scales", text:"Shelf cameras count packs and scales weigh loose stock. Staff tick “I checked” before any count changes the stock.", imgs:[["stock_shelf.jpg","Shelf camera"],["stock_overview.jpg","Stock by location"]]},
+  bin:     {title:"Kitchen bin camera", text:"A camera at the kitchen bin sees what's thrown away, and a scale gives the grams (measured, not guessed). Staff confirm every entry.", imgs:[["cameras.jpg","Waste cameras page"]]},
+  plate:   {title:"Plate-return camera", text:"Estimates the leftover on each returned plate: none / 25 / 50 / 75 / 100% × recipe grams. Staff confirm or correct it. Pointed at plates, never at faces.", imgs:[["cameras.jpg","Plate-return camera"]]},
+  forecast:{title:"Forecast", text:"Tomorrow's portions come from the same weekday over recent weeks, plus a safety buffer the chef sets. Every row shows its reason.", imgs:[["prep.jpg","Suggested prep, with reasons"]]},
+  suggest: {title:"Suggestion", text:"Prep per dish, plus an order list: forecast × recipe grams − stock, rounded to supplier packs. The assistant explains why, from the app's data.", imgs:[["order.jpg","Order suggestion"],["chat.jpg","Assistant"]]},
+  approve: {title:"Manager approves", text:"Nothing is prepped, ordered or logged automatically. The manager edits, enters their role (not their name) and approves.", imgs:[["prep_approval.jpg","Manager approval"]]}
+};
+var EDGES = {stock:["stock"], bin:["bin"], plate:["plate"], forecast:["stock","bin","plate","forecast"], suggest:["forecast","suggest"], approve:["suggest"]};
+var pIntro = document.getElementById("panelIntro"), pBody = document.getElementById("panelBody"), pPic = document.getElementById("pPic"), pImg = document.getElementById("pImg");
+var pTabs = document.getElementById("pTabs"), curNode = null;
+function showImg(src, alt){
+  pImg.src = IMG + src; pImg.alt = alt + " (Leftover Lab screenshot, synthetic data)";
+  pImg.dataset.src = src;
+  pPic.classList.remove("swap"); void pPic.offsetWidth; if (!reduce) pPic.classList.add("swap");
+}
+function selectNode(key){
+  var d = NODES[key]; curNode = key;
+  document.querySelectorAll(".fnode").forEach(function(b){ b.classList.toggle("sel", b.dataset.node === key); b.setAttribute("aria-pressed", b.dataset.node === key); });
+  document.querySelectorAll("#flow [data-w]").forEach(function(p){ p.classList.toggle("on", EDGES[key].indexOf(p.dataset.w) >= 0); });
+  pIntro.hidden = true; pBody.hidden = false; pPic.hidden = false;
+  document.getElementById("pTitle").textContent = d.title;
+  document.getElementById("pText").textContent = d.text;
+  pTabs.innerHTML = "";
+  if (d.imgs.length > 1) d.imgs.forEach(function(im, k){
+    var b = document.createElement("button"); b.textContent = im[1]; if (!k) b.className = "on";
+    b.onclick = function(){ pTabs.querySelectorAll("button").forEach(function(x){ x.className = ""; }); b.className = "on"; showImg(im[0], im[1]); };
+    pTabs.appendChild(b);
+  });
+  pTabs.style.display = d.imgs.length > 1 ? "flex" : "none";
+  showImg(d.imgs[0][0], d.imgs[0][1]);
+  pBody.classList.remove("swap"); void pBody.offsetWidth; if (!reduce) pBody.classList.add("swap");
+}
+document.querySelectorAll(".fnode").forEach(function(b){ b.addEventListener("click", function(){ selectNode(b.dataset.node); }); });
+pPic.addEventListener("click", function(){ var i = GALLERY.findIndex(function(g){ return g[0] === pImg.dataset.src; }); openLb(i < 0 ? 0 : i); });
+
+/* ---------- slide 4 tabs + illustration ---------- */
+var knob = document.getElementById("knob");
+function setTab(t){
+  document.querySelectorAll("#seg button").forEach(function(b){ b.setAttribute("aria-selected", b.dataset.tab === t); });
+  document.getElementById("pane-demo").classList.toggle("on", t === "demo");
+  document.getElementById("pane-est").classList.toggle("on", t === "est");
+  var btn = document.querySelector('#seg button[data-tab="' + t + '"]');
+  knob.style.left = btn.offsetLeft + "px"; knob.style.width = btn.offsetWidth + "px";
+  knob.classList.toggle("est", t === "est");
+}
+document.querySelectorAll("#seg button").forEach(function(b){ b.addEventListener("click", function(){ setTab(b.dataset.tab); }); });
+var red = document.getElementById("red"), redOut = document.getElementById("redOut");
+function upd(){ var v = +red.value; redOut.textContent = v + "%"; document.getElementById("afterV").textContent = 100 - v; document.getElementById("afterCol").style.height = (100 - v) + "%"; }
+red.addEventListener("input", upd); upd();
+
+/* ---------- gallery + lightbox ---------- */
+var GALLERY = [
+  ["home_hero.jpg","Home","Today's plan at a glance"],
+  ["stock_overview.jpg","Stock","What's on the shelves, by location"],
+  ["stock_shelf.jpg","Shelf camera","Counts packs; staff confirm before stock changes"],
+  ["stock_expiry.jpg","Use first","Batches close to expiry, oldest first (FIFO)"],
+  ["stock_devices.jpg","Devices","How scales and cameras connect through a local gateway"],
+  ["cameras.jpg","Waste cameras","Plate-leftover bucket, staff confirm"],
+  ["prep.jpg","Prep plan","Suggested prep with the reason on every row"],
+  ["prep_approval.jpg","Approval","Manager approves by role; assumptions & limits"],
+  ["order.jpg","Ordering","Order list rounded to supplier packs; export only"],
+  ["chat.jpg","Assistant","Answers from the app's data, with a why"]
+];
+var gal = document.getElementById("gallery");
+GALLERY.forEach(function(g, i){
+  var b = document.createElement("button"); b.className = "thumb";
+  b.innerHTML = '<img src="' + IMG + g[0] + '" alt="' + g[1] + ' screenshot" loading="eager"><span>' + (i+1) + ". " + g[1] + "</span>";
+  b.onclick = function(){ openLb(i); };
+  gal.appendChild(b);
+});
+var lbImg = lb.querySelector("img"), lbCap = lb.querySelector(".cap"), lbI = 0;
+function openLb(i){ lbI = (i + GALLERY.length) % GALLERY.length; var g = GALLERY[lbI]; lbImg.src = IMG + g[0]; lbImg.alt = g[1]; lbCap.innerHTML = (lbI+1) + " / " + GALLERY.length + " · " + g[1] + "<small>" + g[2] + " · synthetic demo data</small>"; lb.classList.add("on"); }
+function closeLb(){ lb.classList.remove("on"); }
+function lbStep(d){ openLb(lbI + d); }
+lb.querySelector(".x").onclick = closeLb;
+lb.querySelector(".p").onclick = function(e){ e.stopPropagation(); lbStep(-1); };
+lb.querySelector(".n").onclick = function(e){ e.stopPropagation(); lbStep(1); };
+lb.addEventListener("click", function(e){ if (e.target === lb) closeLb(); });
+
+/* ---------- start ---------- */
+var start = parseInt((location.hash || "").replace("#",""), 10);
+go(isNaN(start) ? 0 : start - 1, true);
+requestAnimationFrame(function(){ setTab("demo"); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ setTab(document.getElementById("tabEst").getAttribute("aria-selected") === "true" ? "est" : "demo"); });
+window.addEventListener("hashchange", function(){ var n = parseInt(location.hash.replace("#",""), 10); if (!isNaN(n)) go(n-1); });
+window.deck = {go:go, selectNode:selectNode, setTab:setTab, openLb:openLb, closeLb:closeLb, setReduction:function(v){ red.value = v; upd(); }};
+})();
+</script>
+</body>
+</html>

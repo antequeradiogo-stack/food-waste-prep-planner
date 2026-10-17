@@ -78,6 +78,9 @@ Scale connectors live in `starter/scales.py` behind one `Reading(scale_id, locat
 
 `check_plausibility()` flags negative, over-max and sudden-jump readings; flagged readings start unticked and nothing changes stock until staff apply it. Shelf counts use a vision LLM (strict JSON, validated against known items) if `LLM_API_KEY` is set, otherwise a **demo heuristic** that only works on the bundled synthetic shelf drawings. Cameras count packs — not how full a sack is, and they can't read expiry dates.
 
+## Pitch deck
+Interactive hackathon pitch deck (static HTML, no build step): **https://antequeradiogo-stack.github.io/food-waste-prep-planner/pitch/** (planned GitHub Pages URL — Pages from `main` → `/docs`). It also opens offline: open `docs/pitch/index.html` in a browser. It is separate from the Streamlit app and the tests.
+
 ## Deploy on Streamlit Community Cloud
 1. share.streamlit.io → **Create app** → GitHub repo `antequeradiogo-stack/food-waste-prep-planner`.
 2. Branch `main` · Main file path `starter/app.py` · Python 3.12.
@@ -101,6 +104,7 @@ Scale connectors live in `starter/scales.py` behind one `Reading(scale_id, locat
 | `starter/tests/` | pytest + Streamlit AppTest (every page loads, approvals, confirm flows, chat) |
 | `data/` | Synthetic sales, recipes, stock batches, suppliers, plate + shelf illustrations, generators (`make_stock_data.py`, `make_suppliers.py`) + data card |
 | `docs/screenshots/` | Screenshots (headless Chrome, synthetic data) |
+| `docs/pitch/` | Interactive pitch deck (`index.html` + `assets/`), served by GitHub Pages; `docs/.nojekyll` disables Jekyll |
 | `PITCH.md`, `DISCLOSURE.md`, `RESPONSIBLE_AI.md`, `BACKUP_GRANT_AGENT.md` | Hackathon materials |
 
 ## Limits
