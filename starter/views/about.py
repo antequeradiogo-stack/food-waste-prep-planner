@@ -24,6 +24,7 @@ st.markdown("""
 | `suppliers.csv` | pack sizes, prices | **Synthetic**, fictional suppliers |
 | `shelf_samples/*.png` | shelf images | **Drawn illustrations**, not photos |
 | `sample_plates/*.png` | plate images | **Drawn illustrations**, not photos |
+
 No real restaurant, guest or supplier data is included.
 """)
 
