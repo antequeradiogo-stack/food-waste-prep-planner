@@ -8,7 +8,8 @@ Organiser split: 30 s problem/user · 90 s prototype · 30 s benefit/evidence ·
 | 2:00–2:30 | Benefit & how we'd measure it | Impact 30 | Beneficiary + plausible benefit + honest metric ("we'd compare waste logs 4 weeks before/after"). Label anything computed on synthetic data as a demo, not a result. A public source may frame scale (cite it on the slide). |
 | 2:30–3:00 | Limits, safeguards, next step | Responsible AI 20 + Pitch 10 | 2 limits, 1 safeguard (human approval / no auto-action), 1 concrete next step (pilot with one kitchen using real logs). |
 
-Two-stream design (one line): dining-room plate estimate = today's demo (photo → leftover bucket → staff confirm → grams per ingredient); kitchen bin = scale grams typed in by staff (demo); connected camera + smart scale = next step for measured waste.
+Three data streams: **stock** (shelf camera counts + scales), **kitchen bin** (scale grams), **plates** (photo estimate). Claim precision only after validating against scales in a pilot.
+
 
 Tie-breakers are impact then responsible AI → never cut those sections to fit time.
 Avoid: brand-name dropping, "AI-powered" fluff, unsupported numbers, apologising for the demo.

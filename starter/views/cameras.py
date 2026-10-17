@@ -9,6 +9,7 @@ from PIL import Image
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 import cameras  # noqa: E402
 import plate_waste as pw  # noqa: E402
+import scales  # noqa: E402
 import ui  # noqa: E402
 
 ui.page_header(":material/photo_camera: Waste cameras",
@@ -100,7 +101,13 @@ with bin_tab:
         ingredient = st.selectbox("What was thrown away?", ingredients, key="bin_ingredient")
         reason = st.selectbox("Reason", ["over-prepped", "spoiled / expired", "trim / peel", "dropped / mistake", "other"],
                               key="bin_reason")
-        grams_in = st.number_input("Weight from scale (g)", min_value=0, max_value=50000, step=10, key="bin_grams")
+        def read_bin_scale():
+            n = st.session_state.get("bin_scale_reads", 0)
+            st.session_state.bin_grams = int(scales.SimulatedScale.bin_reading(n))
+            st.session_state.bin_scale_reads = n + 1
+        st.button("Read bin scale (simulated)", key="bin_scale", on_click=read_bin_scale, icon=":material/scale:",
+                  help="Demo: fills the weight from a simulated scale. Real scales connect via a local gateway (see Stock → How devices connect).")
+        grams_in = st.number_input("Weight from scale (g) — check before confirming", min_value=0, max_value=50000, step=10, key="bin_grams")
         if st.button("Confirm and add to log", key="bin_confirm", disabled=grams_in <= 0, type="primary", icon=":material/check:"):
             log_rows([{"time": datetime.now().isoformat(timespec="seconds"), "stream": "kitchen_bin", "dish": "-",
                        "ingredient": ingredient, "estimated_bucket": "", "confirmed_bucket": "",

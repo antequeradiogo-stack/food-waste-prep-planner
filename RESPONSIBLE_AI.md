@@ -37,3 +37,11 @@
 ## Cameras
 - [ ] Demo does not connect to CCTV. Device webcam / upload / optional one-frame RTSP grab; nothing is stored.
 - [ ] Camera URLs with passwords must not be typed into a shared/public deployment; use secrets.
+
+## Stock: shelf cameras & scales
+- [ ] Shelf cameras point at shelves only — no staff faces; images are not stored (data minimisation: keep counts, grams, timestamps).
+- [ ] Vision-LLM counts are strictly validated (known items only, whole numbers 0–200, confidence); bad output falls back to the demo heuristic.
+- [ ] Shelf heuristic labelled "demo heuristic" — only works on the synthetic drawings.
+- [ ] Staff tick "I checked these counts" before stock changes; scale readings are reviewed and flagged (negative, over max, sudden jump, unstable) and start unticked.
+- [ ] Say what cameras can't do: they count packs, not fill level; they can't read expiry dates.
+- [ ] Device credentials stay on the local gateway / in secrets, never in the app or git.

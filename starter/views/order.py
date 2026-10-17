@@ -12,6 +12,8 @@ ui.page_header(":material/local_shipping: Ordering",
                "Works out what to order: forecast portions × recipe grams for the next days, minus what's in stock, rounded up to supplier packs.",
                "Pick how many days to cover, check the *why* column, adjust packs if needed, then approve and download the CSV.")
 
+st.caption("Stock used: " + ("**counts/readings confirmed on the Stock page this session**" if ui.stock_is_confirmed()
+                             else "synthetic stock file (confirm counts on the Stock page to update)"))
 c1, c2 = st.columns(2)
 days = c1.slider("Days to cover", 1, 7, 3, key="order_days")
 buffer = c2.slider("Safety buffer %", 0, 30, 10, key="order_buffer")
@@ -39,7 +41,7 @@ if st.button("Approve order", disabled=not who, key="order_approve", type="prima
 
 with st.expander("Assumptions & limits", expanded=True, icon=":material/info:"):
     st.markdown("""
-- Stock levels, suppliers, pack sizes and prices are **synthetic** (`data/stock.csv`, `data/suppliers.csv`).
+- Stock comes from confirmed Stock-page counts in this session, else the **synthetic** `data/stock.csv`; suppliers, pack sizes and prices are **synthetic** (`data/suppliers.csv`).
 - Uses standard recipe grams; trim loss, spoilage and lead times are not modelled yet (lead time is shown for info).
 - Forecast for each day = same-weekday average before the plan date, + buffer.
 - The app never contacts suppliers.

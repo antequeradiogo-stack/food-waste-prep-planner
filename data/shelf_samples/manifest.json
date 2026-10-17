@@ -1,0 +1,23 @@
+{
+  "dry store": {
+    "bun": 3,
+    "chickpeas": 3,
+    "coconut_sauce": 2,
+    "croutons": 3,
+    "rice": 2
+  },
+  "walk-in fridge": {
+    "butter": 3,
+    "cheese": 3,
+    "cream": 5,
+    "dressing": 3
+  },
+  "back fridge": {
+    "lettuce_tomato": 1,
+    "romaine": 2
+  },
+  "freezer": {
+    "beef_patty": 2,
+    "cake": 2
+  }
+}

@@ -1,0 +1,36 @@
+batch_id,ingredient,location,quantity,unit,received_date,expiry_date,data_source
+B001,white_fish,walk-in fridge,1200,g,2026-07-04,2026-07-07,SYNTHETIC
+B002,white_fish,walk-in fridge,1800,g,2026-07-05,2026-07-08,SYNTHETIC
+B003,potato,dry store,4800,g,2026-06-19,2026-07-10,SYNTHETIC
+B004,potato,dry store,7200,g,2026-07-05,2026-07-26,SYNTHETIC
+B005,cream,walk-in fridge,1,pack,2026-07-01,2026-07-08,SYNTHETIC
+B006,cream,walk-in fridge,4,pack,2026-07-05,2026-07-12,SYNTHETIC
+B007,leek,back fridge,320,g,2026-06-30,2026-07-07,SYNTHETIC
+B008,leek,back fridge,480,g,2026-07-06,2026-07-13,SYNTHETIC
+B009,beef_patty,freezer,1,pack,2026-05-20,2026-08-18,SYNTHETIC
+B010,beef_patty,freezer,2,pack,2026-07-06,2026-10-04,SYNTHETIC
+B011,bun,dry store,1,pack,2026-07-04,2026-07-08,SYNTHETIC
+B012,bun,dry store,3,pack,2026-07-05,2026-07-09,SYNTHETIC
+B013,cheese,walk-in fridge,1,pack,2026-06-16,2026-07-07,SYNTHETIC
+B014,cheese,walk-in fridge,2,pack,2026-07-06,2026-07-27,SYNTHETIC
+B015,lettuce_tomato,back fridge,2,pack,2026-07-06,2026-07-09,SYNTHETIC
+B016,chickpeas,dry store,1,pack,2025-08-08,2026-08-08,SYNTHETIC
+B017,chickpeas,dry store,2,pack,2026-07-06,2027-07-06,SYNTHETIC
+B018,rice,dry store,2,pack,2026-07-05,2027-07-05,SYNTHETIC
+B019,vegetables,back fridge,480,g,2026-07-04,2026-07-09,SYNTHETIC
+B020,vegetables,back fridge,720,g,2026-07-06,2026-07-11,SYNTHETIC
+B021,coconut_sauce,dry store,2,pack,2026-07-05,2027-01-01,SYNTHETIC
+B022,romaine,back fridge,2,pack,2026-07-06,2026-07-10,SYNTHETIC
+B023,chicken,walk-in fridge,600,g,2026-07-04,2026-07-08,SYNTHETIC
+B024,chicken,walk-in fridge,900,g,2026-07-06,2026-07-10,SYNTHETIC
+B025,croutons,dry store,1,pack,2026-05-16,2026-07-15,SYNTHETIC
+B026,croutons,dry store,2,pack,2026-07-06,2026-09-04,SYNTHETIC
+B027,dressing,walk-in fridge,1,pack,2026-06-07,2026-07-07,SYNTHETIC
+B028,dressing,walk-in fridge,2,pack,2026-07-06,2026-08-05,SYNTHETIC
+B029,bread,dry store,1200,g,2026-07-05,2026-07-07,SYNTHETIC
+B030,bread,dry store,1800,g,2026-07-06,2026-07-08,SYNTHETIC
+B031,butter,walk-in fridge,1,pack,2026-06-14,2026-07-14,SYNTHETIC
+B032,butter,walk-in fridge,3,pack,2026-07-05,2026-08-04,SYNTHETIC
+B033,cake,freezer,2,pack,2026-07-05,2026-09-03,SYNTHETIC
+B034,mixed_fruit,back fridge,600,g,2026-07-04,2026-07-07,SYNTHETIC
+B035,mixed_fruit,back fridge,900,g,2026-07-05,2026-07-08,SYNTHETIC

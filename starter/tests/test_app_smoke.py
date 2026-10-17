@@ -6,7 +6,7 @@ from streamlit.testing.v1 import AppTest
 
 STARTER = pathlib.Path(__file__).resolve().parents[1]
 APP = str(STARTER / "app.py")
-PAGES = ["views/home.py", "views/prep.py", "views/order.py", "views/cameras.py", "views/chat.py", "views/about.py"]
+PAGES = ["views/home.py", "views/prep.py", "views/stock.py", "views/order.py", "views/cameras.py", "views/chat.py", "views/about.py"]
 
 
 @pytest.fixture(autouse=True)
@@ -88,3 +88,50 @@ def test_assistant_typed_question():
     at = open_page("views/chat.py")
     at.chat_input[0].set_value("Which weekday is busiest?").run()
     assert "Busiest" in at.session_state.chat[-1]["content"]
+
+
+def test_home_shows_expiry_card():
+    at = open_page()
+    assert any("Expiring ≤ 2 days" in m.label for m in at.metric)
+
+
+def test_shelf_count_confirm_updates_stock_used_by_ordering():
+    at = open_page("views/stock.py")
+    at.selectbox(key="shelf_location").select("dry store").run()
+    assert at.button(key="shelf_confirm").disabled                      # must tick "I checked" first
+    at.checkbox(key="shelf_checked").check().run()
+    at.button(key="shelf_confirm").click().run()
+    b = at.session_state.stock_batches
+    assert b[(b.ingredient == "bun") & (b.location == "dry store")]["quantity"].sum() == 3   # drawn shelf shows 3 (records said 4)
+    assert any("bun @ dry store" in c["change"] for c in at.session_state.stock_changes)
+    at.switch_page("views/order.py").run()
+    assert not at.exception
+    assert any("confirmed on the Stock page" in c.value for c in at.caption)
+
+
+def test_scale_readings_reviewed_before_apply():
+    at = open_page("views/stock.py")
+    at.button(key="scale_read").click().run()
+    readings = at.session_state.scale_readings
+    assert len(readings) >= 5
+    at.button(key="scale_apply").click().run()
+    changes = at.session_state.stock_changes
+    assert 0 < len(changes) < len(readings)                              # the flagged reading was not applied
+    assert at.session_state.scale_readings == []
+
+
+def test_expiry_slider():
+    at = open_page("views/stock.py")
+    at.slider(key="expiry_days").set_value(0).run()
+    zero = [m.value for m in at.metric if "expiring within 0" in m.label][0]
+    at.slider(key="expiry_days").set_value(7).run()
+    seven = [m.value for m in at.metric if "expiring within 7" in m.label][0]
+    assert int(seven) >= int(zero)
+
+
+def test_bin_scale_button_fills_grams():
+    at = open_page("views/cameras.py")
+    at.button(key="bin_scale").click().run()
+    assert at.number_input(key="bin_grams").value == 420
+    at.button(key="bin_confirm").click().run()
+    assert at.session_state.waste_log[-1]["grams_wasted"] == 420

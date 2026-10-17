@@ -18,6 +18,7 @@ import pandas as pd
 
 import core
 import ordering
+import stock as stock_mod
 
 SUGGESTED_QUESTIONS = [
     "What should I prep tomorrow?",
@@ -26,6 +27,9 @@ SUGGESTED_QUESTIONS = [
     "How much did we waste last week?",
     "Which weekday is busiest?",
     "Any advice to cut waste?",
+    "What expires in the next 2 days?",
+    "What should we use first?",
+    "What's in stock in the walk-in fridge?",
 ]
 
 
@@ -37,6 +41,7 @@ class AppData:
     suppliers: pd.DataFrame
     plan_date: object                       # the "tomorrow" we plan for
     waste_log: list = field(default_factory=list)
+    batches: pd.DataFrame | None = None     # stock batches (location, expiry); optional
 
 
 # ------------------------------------------------------------------ tools
@@ -104,6 +109,39 @@ def tool_weekday_pattern(data: AppData, item: str | None = None) -> dict:
             "busiest": avg.idxmax(), "quietest": avg.idxmin()}
 
 
+def tool_stock_levels(data: AppData, location: str | None = None) -> dict:
+    if data.batches is None:
+        rows = [{"ingredient": r.ingredient, "on_hand_g": int(r.on_hand_g)} for r in data.stock.itertuples()]
+        return {"location": "all", "items": rows}
+    loc = stock_mod.by_location(data.batches, data.suppliers)
+    if location:
+        loc = loc[loc["location"] == location]
+    return {"location": location or "all",
+            "items": [{"ingredient": r.ingredient, "location": r.location, "quantity": float(r.quantity),
+                       "unit": r.unit, "grams": int(r.grams), "next_expiry": str(r.next_expiry.date())}
+                      for r in loc.sort_values(["location", "ingredient"]).itertuples()]}
+
+
+def tool_expiring_items(data: AppData, days: int = 2) -> dict:
+    if data.batches is None:
+        return {"error": "no batch/expiry data loaded"}
+    days = max(0, min(int(days), 30))
+    e = stock_mod.expiring(data.batches, data.plan_date, days)
+    return {"today": str(data.plan_date), "days": days,
+            "batches": [{"batch_id": r.batch_id, "ingredient": r.ingredient, "location": r.location,
+                         "quantity": float(r.quantity), "unit": r.unit, "expiry_date": str(r.expiry_date.date()),
+                         "days_left": int(r.days_left)} for r in e.itertuples()]}
+
+
+def tool_use_first_advice(data: AppData, days: int = 2) -> dict:
+    if data.batches is None:
+        return {"error": "no batch/expiry data loaded"}
+    e = stock_mod.use_first(stock_mod.expiring(data.batches, data.plan_date, days), data.recipes)
+    return {"today": str(data.plan_date), "days": days,
+            "advice": [{"ingredient": r.ingredient, "location": r.location, "quantity": float(r.quantity), "unit": r.unit,
+                        "days_left": int(r.days_left), "use_in_dishes": r.use_in_dishes} for r in e.itertuples()]}
+
+
 TOOLS = {
     "get_prep_plan": (tool_prep_plan, "Suggested prep portions per dish for the plan date.",
                       {"buffer_pct": {"type": "number"}, "weeks": {"type": "integer"}}),
@@ -115,6 +153,11 @@ TOOLS = {
                                {"n": {"type": "integer"}, "days": {"type": "integer"}}),
     "get_weekday_pattern": (tool_weekday_pattern, "Average portions sold per weekday (optionally for one dish).",
                             {"item": {"type": "string"}}),
+    "get_stock_levels": (tool_stock_levels, "Current stock per ingredient and location (confirmed counts if any).",
+                         {"location": {"type": "string", "enum": stock_mod.LOCATIONS}}),
+    "get_expiring_items": (tool_expiring_items, "Stock batches expiring within N days.", {"days": {"type": "integer"}}),
+    "get_use_first_advice": (tool_use_first_advice, "Expiring ingredients and the dishes that use them (FIFO).",
+                             {"days": {"type": "integer"}}),
 }
 
 
@@ -184,13 +227,67 @@ def _fmt_weekday(r):
             f"**Why:** mean of daily `sold_units` by weekday over all history.")
 
 
+def _fmt_stock(r):
+    if not r["items"]:
+        return "No stock recorded there."
+    lines = "\n".join(f"- **{i['ingredient']}** ({i.get('location', '')}): {i.get('quantity', i.get('on_hand_g')):g} "
+                      f"{i.get('unit', 'g')}" + (f" ≈ {i['grams']} g" if i.get("unit") == "pack" else "")
+                      + (f", next expiry {i['next_expiry']}" if "next_expiry" in i else "")
+                      for i in r["items"])
+    return (f"Stock ({r['location']}):\n{lines}\n\n**Why:** stock batches — confirmed shelf counts/scale readings "
+            f"from this session if any, otherwise the synthetic stock file.")
+
+
+def _fmt_expiring(r):
+    if "error" in r:
+        return r["error"]
+    if not r["batches"]:
+        return f"Nothing expires within {r['days']} days of {r['today']}."
+    lines = "\n".join(f"- **{b['ingredient']}** ({b['location']}, {b['quantity']:g} {b['unit']}): "
+                      f"expires {b['expiry_date']} ({b['days_left']} day(s) left)" for b in r["batches"])
+    return (f"Expiring within {r['days']} days of {r['today']}:\n{lines}\n\n"
+            f"**Why:** expiry dates on the stock batches (synthetic). Check the label before using.")
+
+
+def _fmt_use_first(r):
+    if "error" in r:
+        return r["error"]
+    if not r["advice"]:
+        return f"Nothing needs using up within {r['days']} days."
+    lines = "\n".join(f"- **{a['ingredient']}** ({a['days_left']} day(s) left, {a['quantity']:g} {a['unit']}) → "
+                      f"push: {a['use_in_dishes']}" for a in r["advice"])
+    return (f"Use first (FIFO — oldest batch first):\n{lines}\n\n"
+            f"**Why:** batches expiring within {r['days']} days, matched to dishes in recipes.csv. "
+            f"Consider a daily special; the chef decides.")
+
+
+def _location_in(q: str):
+    for loc in stock_mod.LOCATIONS:          # exact name first ("back fridge")
+        if loc in q:
+            return loc
+    words = re.findall(r"[a-z-]+", q)
+    if "freezer" in words:
+        return "freezer"
+    if "walk-in" in words or "walkin" in words:
+        return "walk-in fridge"
+    return None
+
+
 HELP = ("I can answer from this app's data:\n" + "\n".join(f"- {q}" for q in SUGGESTED_QUESTIONS) +
         "\n\nI only advise — approvals happen on the Prep plan and Ordering pages.")
 
 
 def answer_offline(question: str, data: AppData) -> dict:
     q = question.lower()
-    if any(w in q for w in ("order", "buy", "supplier", "stock", "purchase")):
+    if any(w in q for w in ("order", "buy", "supplier", "purchase")):
+        tool, args, fmt = "get_order_suggestions", {"days": _days_in(q, 3)}, _fmt_order
+    elif any(w in q for w in ("use first", "use up", "fifo", "use it")):
+        tool, args, fmt = "get_use_first_advice", {"days": _days_in(q, 2)}, _fmt_use_first
+    elif any(w in q for w in ("expir", "going off", "best before", "use by")):
+        tool, args, fmt = "get_expiring_items", {"days": _days_in(q, 2)}, _fmt_expiring
+    elif any(w in q for w in ("in stock", "stock level", "on hand", "inventory", "fridge", "freezer", "dry store", "how much do we have")):
+        tool, args, fmt = "get_stock_levels", {"location": _location_in(q)}, _fmt_stock
+    elif "stock" in q:
         tool, args, fmt = "get_order_suggestions", {"days": _days_in(q, 3)}, _fmt_order
     elif any(w in q for w in ("advice", "tip", "improve", "reduce", "cut")):
         tool, args, fmt = "get_worst_waste_dishes", {}, lambda r: _fmt_worst(r, advice=True)

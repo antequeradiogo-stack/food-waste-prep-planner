@@ -9,6 +9,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))   # so pages ca
 import assistant  # noqa: E402
 import core  # noqa: E402
 import plate_waste as pw  # noqa: E402
+import stock as stock_mod  # noqa: E402
 
 APP_NAME = "Leftover Lab"
 DATA = pathlib.Path(__file__).resolve().parent.parent / "data"      # works from any folder
@@ -16,8 +17,9 @@ DATA = pathlib.Path(__file__).resolve().parent.parent / "data"      # works from
 HOW_IT_WORKS = [
     (":material/trending_up:", "1. Forecast", "Past sales for the same weekday predict tomorrow's portions."),
     (":material/checklist:", "2. Approve prep", "The app suggests prep amounts with a reason; the manager edits and approves."),
-    (":material/local_shipping:", "3. Order what's missing", "Recipe grams × forecast − stock, rounded to supplier packs. Export only."),
-    (":material/photo_camera:", "4. Log waste", "Plate and bin photos (confirmed by staff) show what's thrown away, to tune the next forecast."),
+    (":material/inventory_2:", "3. Check stock", "Shelf cameras count packs, scales weigh the rest; staff confirm. Use what expires first."),
+    (":material/local_shipping:", "4. Order what's missing", "Recipe grams × forecast − confirmed stock, rounded to supplier packs. Export only."),
+    (":material/photo_camera:", "5. Log waste", "Plate and bin entries (confirmed by staff) show what's thrown away, to tune the next forecast."),
 ]
 
 
@@ -42,7 +44,25 @@ def recipes() -> pd.DataFrame:
     return _csv("recipes.csv")
 
 
+@st.cache_data
+def _default_batches() -> pd.DataFrame:
+    return stock_mod.load_batches(DATA / "stock_batches.csv")
+
+
+def batches() -> pd.DataFrame:
+    """Stock batches confirmed in this session (Stock page), else the synthetic CSV."""
+    b = st.session_state.get("stock_batches")
+    return b if b is not None else _default_batches()
+
+
+def stock_is_confirmed() -> bool:
+    return st.session_state.get("stock_batches") is not None
+
+
 def stock() -> pd.DataFrame:
+    """ingredient, on_hand_g. From session-confirmed batches if any, else data/stock.csv."""
+    if stock_is_confirmed():
+        return stock_mod.on_hand(st.session_state.stock_batches, suppliers())
     return _csv("stock.csv")
 
 
@@ -56,12 +76,12 @@ def plan_date():
 
 
 def app_data() -> assistant.AppData:
-    return assistant.AppData(sales(), recipes(), stock(), suppliers(), plan_date(), st.session_state.waste_log)
+    return assistant.AppData(sales(), recipes(), stock(), suppliers(), plan_date(), st.session_state.waste_log, batches())
 
 
 # ---------- session + layout ----------
 def init_state():
-    for key, default in {"waste_log": [], "chat": [], "onboarded": False}.items():
+    for key, default in {"waste_log": [], "chat": [], "onboarded": False, "stock_changes": []}.items():
         if key not in st.session_state:
             st.session_state[key] = default
 
@@ -77,7 +97,7 @@ def page_header(title: str, what: str, todo: str):
 
 
 def how_it_works():
-    cols = st.columns(4)
+    cols = st.columns(len(HOW_IT_WORKS))
     for col, (icon, title, text) in zip(cols, HOW_IT_WORKS):
         with col.container(border=True):
             st.markdown(f"#### {icon} {title}")
