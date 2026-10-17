@@ -27,3 +27,13 @@
 - [ ] Staff confirm or correct every bucket before it is logged; the log records both estimated and confirmed bucket.
 - [ ] Pilot plan: weigh a sample of plates on a scale to calibrate before trusting any gram numbers.
 - [ ] Sample images are synthetic illustrations, labelled as such.
+
+## Assistant (chat)
+- [ ] Answers come from deterministic functions over the app's data; each answer shows a *Why* line and the data used.
+- [ ] LLM mode: system prompt forbids invented numbers; numbers not found in tool results are flagged in the reply.
+- [ ] The assistant advises only — approving prep plans and supplier orders requires a manager click; orders are exported, never sent.
+- [ ] LLM failure falls back to offline answers; no personal data is sent in prompts (only aggregated synthetic numbers).
+
+## Cameras
+- [ ] Demo does not connect to CCTV. Device webcam / upload / optional one-frame RTSP grab; nothing is stored.
+- [ ] Camera URLs with passwords must not be typed into a shared/public deployment; use secrets.

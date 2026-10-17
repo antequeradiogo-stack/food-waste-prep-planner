@@ -1,0 +1,13 @@
+[theme]
+base = "light"
+primaryColor = "#2E7D5B"            # calm green accent
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F2F6F4"
+textColor = "#1F2933"
+font = "sans serif"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false

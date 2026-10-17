@@ -1,4 +1,6 @@
 pandas>=2.2,<4
-streamlit>=1.40,<2
+streamlit>=1.50,<2
 pillow>=10
 numpy>=1.26
+# optional: openai>=1.0  (LLM mode)
+# optional: opencv-python-headless  (IP-camera snapshots)
